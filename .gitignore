@@ -9,6 +9,8 @@ build
 *.egg-info
 dist
 
-data
+data/data
+data/tfrecords
+
 random
 
