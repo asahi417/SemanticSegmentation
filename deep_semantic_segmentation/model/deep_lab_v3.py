@@ -112,41 +112,71 @@ class DeepLab3:
         self.__prob = tf.nn.softmax(logit)
         self.__logger.info(' * prob shape: %s' % self.__prob.shape)
 
-        self.__prediction = tf.argmax(self.__prob, axis=-1)
+        self.__prediction = tf.expand_dims(tf.argmax(self.__prob, axis=-1), axis=-1)
         self.__logger.info(' * prediction shape: %s' % self.__prediction.shape)
 
         ############
         # optimize #
         ############
-        loss = self.__pixel_wise_softmax(logit, self.__segmentation)
+        self.__loss = self.__pixel_wise_softmax(logit, self.__segmentation)
         trainable_variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
-
-        # optimizer
-        optimizer = util_tf.get_optimizer(self.__option.optimizer, self.__learning_rate)
 
         # L2 weight decay
         if self.__option.weight_decay != 0.0:
             l2_loss = self.__option.weight_decay * tf.add_n([tf.nn.l2_loss(v) for v in trainable_variables])
         else:
             l2_loss = 0.0
-        loss += l2_loss
+        self.__loss += l2_loss
+
+        # optimizer
+        # global_step = tf.train.get_or_create_global_step()
+        optimizer = util_tf.get_optimizer(self.__option.optimizer, self.__learning_rate)
+        if self.__option.gradient_clip is None:
+            self.__train_op = optimizer.minimize(self.__loss)
+        else:
+            grads, _ = tf.clip_by_global_norm(tf.gradients(self.__loss, trainable_variables), self.__option.gradient_clip)
+            # self.__train_op = optimizer.apply_gradients(zip(grads, trainable_variables), global_step=global_step)
+            self.__train_op = optimizer.apply_gradients(zip(grads, trainable_variables))
 
         ###########
         # logging #
         ###########
-        self.__logger.info('variables')
-        n_var = 0
-        for var in trainable_variables:
-            sh = var.get_shape().as_list()
-            self.__logger.info('%s: %s' % (var.name, str(sh)))
-            n_var += np.prod(sh)
-            # write for tensorboard visualization
-            # variable_summaries(var, var.name.split(':')[0].replace('/', '-'))
-        self.__logger.info('total variables: %i' % n_var)
-        self.__saver = tf.train.Saver()
-        self.__saver_backbone = tf.train.Saver(
-            tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=self.__option.model_variant)
-        )
+        with tf.variable_scope('summary'):
+            # logging variables
+            self.__logger.info('variables')
+            n_var = 0
+            for var in trainable_variables:
+                sh = var.get_shape().as_list()
+                self.__logger.info('%s: %s' % (var.name, str(sh)))
+                n_var += np.prod(sh)
+            self.__logger.info('total variables: %i' % n_var)
+
+            # saver
+            self.__saver = tf.train.Saver()
+            self.__saver_backbone = tf.train.Saver(
+                tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=self.__option.model_variant)
+            )
+
+            # scalar summary
+            def get_summary(__name):
+                return tf.summary.merge([
+                    tf.summary.scalar('%s_loss' % __name, self.__loss),
+                    # tf.summary.scalar('%s_accuracy' % __name, self.__accuracy),
+                ])
+            self.__summary_train = get_summary('train')
+            self.__summary_valid = get_summary('valid')
+
+            # image summary
+            logging_image_number = 5
+            self.__summary_images = tf.summary.merge([
+                tf.summary.image('image', tf.cast(self.__image, tf.uint8), logging_image_number),
+                tf.summary.image('segmentation_predict',
+                                 tf.cast(tf.floor(self.__prediction * 255 / self.__iterator.num_class), tf.uint8),
+                                 logging_image_number),
+                tf.summary.image('segmentation_truth',
+                                 tf.cast(tf.floor(self.__segmentation * 255 / self.__iterator.num_class), tf.uint8),
+                                 logging_image_number),
+            ])
 
     def __pixel_wise_softmax(self,
                              logit,
@@ -388,6 +418,11 @@ class DeepLab3:
                     is_training=is_training,
                     scope='dropout')
         return concat_logits
+
+    def train(self,
+              epoch):
+        pass
+
 
     def test(self, is_training=True):
         self.__session.run(self.__initializer, feed_dict={self.__is_training: is_training})

@@ -49,6 +49,7 @@ class Options:
     top_k_percent_pixels = 1.0
 
     optimizer = 'momentum'
+    gradient_clip = None
 
     def __init__(self, **kwargs):
 
