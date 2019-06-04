@@ -3,13 +3,20 @@ import tensorflow as tf
 from . import ade_20k
 from . import image_process_util
 from ..util import create_log, TFRECORDS
+from ..common_options import Options
 
 VALID_DATA_NAME = dict(
     ade20k=dict(
-        training=ade_20k.BatchFeeder('training'),
-        validation=ade_20k.BatchFeeder('validation'))
+        iterator=dict(
+            training=ade_20k.BatchFeeder('training'),
+            validation=ade_20k.BatchFeeder('validation'),
+        ),
+        ignore_value=ade_20k.IGNORE_VALUE,
+        num_class=ade_20k.NUM_CLASS
+    )
 )
 MEAN_RGB = [123.15, 115.90, 103.06]
+OPT = Options()
 
 
 def decode_image(content, channels):
@@ -55,15 +62,12 @@ class TFRecord:
         segmentation='image/segmentation/encoded'
     )
 
-    # mask white as padding region
-    segmentation_ignore_value = 255
-
     def __init__(self,
                  data_name: str='ade20k',
                  format_image: str='jpg',
                  format_segmentation: str='png',
-                 crop_height: int=513,
-                 crop_width: int = 513,
+                 crop_height: int=OPT.crop_size_height,
+                 crop_width: int=OPT.crop_size_height,
                  min_scale_factor: float=0.5,
                  max_scale_factor: float=2.0,
                  scale_factor_step_size: float=0.25,
@@ -73,7 +77,7 @@ class TFRecord:
             raise ValueError('undefined data: %s not in %s' % (data_name, list(VALID_DATA_NAME.keys())))
         self.__format_image = format_image
         self.__format_segmentation = format_segmentation
-        self.__batch_feeders = VALID_DATA_NAME[data_name]
+        self.__batch_feeders = VALID_DATA_NAME[data_name]['iterator']
         self.__logger = create_log()
         self.__tfrecord_path = os.path.join(TFRECORDS, data_name)
         if not os.path.exists(self.__tfrecord_path):
@@ -85,6 +89,10 @@ class TFRecord:
         self.min_scale_factor = min_scale_factor
         self.max_scale_factor = max_scale_factor
         self.batch_size = batch_size
+
+        # mask white as padding region
+        self.segmentation_ignore_value = VALID_DATA_NAME[data_name]['ignore_value']
+        self.num_class = VALID_DATA_NAME[data_name]['num_class']
 
         self.__shape_checker = ShapeCheck()
 

@@ -11,6 +11,8 @@ dist
 
 data/data
 data/tfrecords
+data/checkpoints
+deep_semantic_segmentation/reference
 
 random
 

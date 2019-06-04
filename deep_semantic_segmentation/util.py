@@ -1,5 +1,9 @@
 import os
 import logging
+import shutil
+import urllib.request
+import tarfile
+from glob import glob
 
 # HOME_DIR = os.path.join(os.path.expanduser("~"), 'semantic_segmentation_data')
 WORK_DIR = os.path.join(
@@ -7,6 +11,52 @@ WORK_DIR = os.path.join(
     'data')
 TFRECORDS = os.path.join(WORK_DIR, 'tfrecords')
 CHECKPOINTS = os.path.join(WORK_DIR, 'checkpoints')
+CHECKPOINTS_FINETUNES = dict(
+    xception_41=os.path.join(CHECKPOINTS, 'finetune', 'xception_41', 'model.ckpt'),
+    xception_65=os.path.join(CHECKPOINTS, 'finetune', 'xception_65', 'model.ckpt'),
+    xception_65_coco=os.path.join(CHECKPOINTS, 'finetune', 'xception_65_coco', 'model.ckpt'),
+    xception_71=os.path.join(CHECKPOINTS, 'finetune', 'xception_71', 'model.ckpt')
+)
+CHECKPOINTS_FINETUNES_URL = dict(
+    xception_41='http://download.tensorflow.org/models/xception_41_2018_05_09.tar.gz',
+    xception_65='http://download.tensorflow.org/models/deeplabv3_xception_2018_01_04.tar.gz',
+    xception_65_coco='http://download.tensorflow.org/models/xception_65_coco_pretrained_2018_10_02.tar.gz',
+    xception_71='http://download.tensorflow.org/models/xception_71_2018_05_09.tar.gz'
+)
+
+
+def load_finetune_model(model_variant):
+
+    logger = create_log()
+    if model_variant not in CHECKPOINTS_FINETUNES.keys():
+        raise ValueError('invalid model: %s not in %s' % (model_variant, list(CHECKPOINTS_FINETUNES.keys())))
+    path = CHECKPOINTS_FINETUNES[model_variant]
+    dir_ckpt = os.path.dirname(path)
+    url = CHECKPOINTS_FINETUNES_URL[model_variant]
+
+    if len(glob(path + '*')) == 0:
+        os.makedirs(dir_ckpt, exist_ok=True)
+        logger.info('download %s from %s' % (model_variant, url))
+        tar_file = os.path.join(dir_ckpt, 'tmp.tar.gz')
+        urllib.request.urlretrieve(url, tar_file)
+
+        logger.info('uncompressing file: %s' % tar_file)
+        tar = tarfile.open(tar_file, "r:gz")
+        tar.extractall(path=dir_ckpt)
+        tar.close()
+
+        tar_directory = ''
+        for _f in glob(os.path.join(dir_ckpt, '*', '*')):
+            tar_directory = os.path.dirname(_f)
+            basename = os.path.basename(_f)
+            shutil.move(_f, os.path.join(dir_ckpt, basename))
+
+        if len(glob(path + '*')) == 0:
+            raise ValueError('no model.ckpt found in given downloaded file')
+        os.removedirs(tar_directory)
+        os.remove(tar_file)
+
+    return path
 
 
 def create_log(out_file_path=None):
@@ -61,6 +111,5 @@ def create_log(out_file_path=None):
 
 
 if __name__ == '__main__':
-    print('HOME_DIR:', HOME_DIR, os.path.exists(HOME_DIR))
     print('WORK_DIR:', WORK_DIR, os.path.exists(WORK_DIR))
 
