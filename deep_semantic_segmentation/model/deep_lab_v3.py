@@ -492,15 +492,16 @@ class DeepLab3:
                 self.__writer.add_summary(self.__session.run(self.__summary_img_train, feed_dict=feed_dict))
                 while True:
                     try:
-                        _, _, summary = self.__session.run(
-                            [self.__train_op, self.__update_op_metric, self.__update_summary],
+                        _, _, summary, step = self.__session.run(
+                            [self.__train_op, self.__update_op_metric, self.__update_summary, self.__global_step],
                             feed_dict=feed_dict)
-                        self.__writer.add_summary(summary)
+                        self.__writer.add_summary(summary, global_step=step)
 
                     except tf.errors.OutOfRangeError:
-                        summary, pix_acc, miou = self.__session.run(
-                            [self.__summary_train, self.__pixel_accuracy, self.__miou], feed_dict=feed_dict)
-                        self.__writer.add_summary(summary)
+                        summary, pix_acc, miou, step = self.__session.run(
+                            [self.__summary_train, self.__pixel_accuracy, self.__miou, self.__global_step],
+                            feed_dict=feed_dict)
+                        self.__writer.add_summary(summary, global_step=step)
                         logger.info(' - [train] pixel accuracy: %0.3f' % pix_acc)
                         logger.info(' - [train] mean IoU      : %0.3f' % miou)
                         break
@@ -517,9 +518,10 @@ class DeepLab3:
                     try:
                         self.__session.run(self.__update_op_metric, feed_dict=feed_dict)
                     except tf.errors.OutOfRangeError:
-                        summary, pix_acc, miou = self.__session.run(
-                            [self.__summary_valid, self.__pixel_accuracy, self.__miou], feed_dict=feed_dict)
-                        self.__writer.add_summary(summary)
+                        summary, pix_acc, miou, step = self.__session.run(
+                            [self.__summary_valid, self.__pixel_accuracy, self.__miou, self.__global_step],
+                            feed_dict=feed_dict)
+                        self.__writer.add_summary(summary, global_step=step)
                         logger.info(' - [valid] pixel accuracy: %0.3f' % pix_acc)
                         logger.info(' - [valid] mean IoU      : %0.3f' % miou)
                         break
