@@ -13,6 +13,7 @@ def get_options():
 
 
 if __name__ == '__main__':
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
     args = get_options()
     recorder = deep_semantic_segmentation.data.TFRecord(data_name=args.data)
     recorder.convert_to_tfrecord()
