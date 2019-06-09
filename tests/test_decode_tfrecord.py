@@ -38,10 +38,15 @@ class TestTFRecord:
 
         self.image = data[self.__iterator.flag['image']]
         self.segmentation = data[self.__iterator.flag['segmentation']]
+        self.segmentation_color = \
+            deep_semantic_segmentation.model.util_tf.coloring_segmentation(self.segmentation,
+                                                                           self.__iterator.num_class,
+                                                                           [self.__iterator.crop_height, self.__iterator.crop_width]
+                                                                           )
         self.filename = data[self.__iterator.flag['filename']]
 
     def get_image(self):
-        image, seg, filename = self.session.run([self.image, self.segmentation, self.filename])
+        image, seg, filename = self.session.run([self.image, self.segmentation_color, self.filename])
         filename = [byte.decode() for byte in filename]
         return image, seg, filename
 
@@ -67,6 +72,7 @@ if __name__ == '__main__':
     args = get_options()
 
     graph = TestTFRecord(args.data)
+    # graph = deep_semantic_segmentation.model.BaseModel(data_name=args.data, batch_size=2)
     while True:
         inp = input('0: Train, 1: Valid >>>')
         if inp == 'q':
@@ -84,7 +90,7 @@ if __name__ == '__main__':
 
             base_name = str(_fname[0]).split('/')[-1].replace('.jpg', '.png')
             graph.array_to_image(_img[0], 'image_' + base_name, rgb=True)
-            graph.array_to_image(_seg[0], 'seg_' + base_name)
+            graph.array_to_image(_seg[0], 'seg_' + base_name, rgb=True)
 
 
 

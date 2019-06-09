@@ -1,9 +1,95 @@
+import numpy as np
 import tensorflow as tf
 from tensorflow.python.util import nest
 from tensorflow.python.ops import array_ops
-from tensorflow.python.framework import ops
+# from tensorflow.python.framework import ops
 
 slim = tf.contrib.slim
+
+
+def get_learning_rate(base_learning_rate: float,
+                      decay_method: str = 'poly',
+                      learning_power: float =0.9,
+                      training_number_of_steps: int = 3000,
+                      learning_rate_decay_step: int = 2000,
+                      learning_rate_decay_factor: float = 0.1):
+    """Gets model's learning rate.
+
+    Computes the model's learning rate for different learning policy.
+    Right now, only "step" and "poly" are supported.
+    (1) The learning policy for "step" is computed as follows:
+      current_learning_rate = base_learning_rate *
+        learning_rate_decay_factor ^ (global_step / learning_rate_decay_step)
+    See tf.train.exponential_decay for details.
+    (2) The learning policy for "poly" is computed as follows:
+      current_learning_rate = base_learning_rate *
+        (1 - global_step / training_number_of_steps) ^ learning_power
+
+     Parameter
+    -----------------
+    base_learning_rate: The base learning rate for model training.
+    decay_method: Learning rate policy for training.
+    training_number_of_steps: Number of steps for training.
+    learning_rate_decay_step: Decay the base learning rate at a fixed step.
+    learning_rate_decay_factor: The rate to decay the base learning rate.
+    learning_power: Power used for 'poly' learning policy.
+
+     Returns
+    -----------------
+    Learning rate for the specified learning policy (tensor).
+    """
+    # get global step from graph (global_step should be passed to minimizer to be updated every batch)
+    global_step = tf.train.get_or_create_global_step()
+
+    if decay_method == 'step':
+        return tf.train.exponential_decay(
+            base_learning_rate,
+            global_step,
+            learning_rate_decay_step,
+            learning_rate_decay_factor,
+            staircase=True)
+    elif decay_method == 'poly':
+        return tf.train.polynomial_decay(
+            base_learning_rate,
+            global_step,
+            training_number_of_steps,
+            end_learning_rate=0,
+            power=learning_power)
+    elif decay_method == 'identity':
+        return base_learning_rate
+    else:
+        raise ValueError('Unknown learning policy.')
+
+
+def coloring_segmentation(segmentation, num_class, shape):
+    """ from segmentation map with class label to color images """
+    [height, width] = shape
+
+    def segmentation_colormap():
+        """Creates a segmentation colormap for visualization.
+
+        Returns:
+            A Colormap for visualizing segmentation results.
+        """
+        colormap = np.zeros((256, 3), dtype=int)
+        ind = np.arange(256, dtype=int)
+
+        for shift in reversed(range(8)):
+            for channel in range(3):
+                colormap[:, channel] |= ((ind >> channel) & 1) << shift
+            ind >>= 3
+
+        tensor_colormap = tf.convert_to_tensor(colormap, tf.int64)
+        return tensor_colormap
+
+    color_map = segmentation_colormap()
+    vis = tf.cast(tf.floor(segmentation * 255 / num_class), tf.int64)
+    vis_flatten = tf.reshape(vis, shape=[-1])
+    vis_flatten_colored = tf.map_fn(lambda x: color_map[x], vis_flatten, dtype=tf.int64)
+    vis_flatten_colored = tf.cast(vis_flatten_colored, dtype=tf.uint8)
+    batch = dynamic_batch_size(vis)
+    vis_colored = tf.reshape(vis_flatten_colored, shape=[batch, height, width, 3])
+    return vis_colored
 
 
 def get_optimizer(optimizer: str, learning_rate: float, **kwargs):
@@ -115,13 +201,13 @@ def split_separable_conv2d(inputs,
         scope=scope + '_pointwise')
 
 
-# def dynamic_batch_size(inputs):
-#     """ Dynamic batch size, which is able to use in a model without deterministic batch size.
-#     See https://github.com/tensorflow/tensorflow/blob/r1.4/tensorflow/python/ops/rnn.py
-#     """
-#     while nest.is_sequence(inputs):
-#         inputs = inputs[0]
-#     return array_ops.shape(inputs)[0]
+def dynamic_batch_size(inputs):
+    """ Dynamic batch size, which is able to use in a model without deterministic batch size.
+    See https://github.com/tensorflow/tensorflow/blob/r1.4/tensorflow/python/ops/rnn.py
+    """
+    while nest.is_sequence(inputs):
+        inputs = inputs[0]
+    return array_ops.shape(inputs)[0]
 #
 #
 # def variable_summaries(var, name):

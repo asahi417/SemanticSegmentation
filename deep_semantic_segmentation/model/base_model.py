@@ -6,7 +6,7 @@ import numpy as np
 from .finetune_models.feature_extractor import DeepImageFeature
 from ..data import TFRecord
 from ..util import create_log, load_finetune_model
-from ..common_options import Options
+# from ..common_options import Options
 
 
 class BaseModel:

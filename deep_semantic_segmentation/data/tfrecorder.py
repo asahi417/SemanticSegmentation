@@ -3,20 +3,19 @@ import tensorflow as tf
 from . import ade_20k
 from . import image_process_util
 from ..util import create_log, TFRECORDS
-from ..common_options import Options
 
 VALID_DATA_NAME = dict(
     ade20k=dict(
         iterator=dict(
             training=ade_20k.BatchFeeder('training'),
-            validation=ade_20k.BatchFeeder('validation'),
+            validation=ade_20k.BatchFeeder('validation')
         ),
         ignore_value=ade_20k.IGNORE_VALUE,
-        num_class=ade_20k.NUM_CLASS
+        num_class=ade_20k.NUM_CLASS,
+        shape=[ade_20k.CROP_SIZE_HEIGHT, ade_20k.CROP_SIZE_WIDTH]
     )
 )
 MEAN_RGB = [123.15, 115.90, 103.06]
-OPT = Options()
 
 
 def decode_image(content, channels):
@@ -66,8 +65,6 @@ class TFRecord:
                  data_name: str='ade20k',
                  format_image: str='jpg',
                  format_segmentation: str='png',
-                 crop_height: int=OPT.crop_size_height,
-                 crop_width: int=OPT.crop_size_height,
                  min_scale_factor: float=0.5,
                  max_scale_factor: float=2.0,
                  scale_factor_step_size: float=0.25,
@@ -83,8 +80,7 @@ class TFRecord:
         if not os.path.exists(self.__tfrecord_path):
             os.makedirs(self.__tfrecord_path, exist_ok=True)
 
-        self.crop_height = crop_height
-        self.crop_width = crop_width
+        self.crop_height, self.crop_width = VALID_DATA_NAME[data_name]['shape']
         self.scale_factor_step_size = scale_factor_step_size
         self.min_scale_factor = min_scale_factor
         self.max_scale_factor = max_scale_factor
@@ -135,7 +131,9 @@ class TFRecord:
         return parsed_features
 
     def image_preprocessing(self, is_training):
-        """ Return image-preprocessing function (if `is_training`, skip some augmentations) """
+        """ Return image-preprocessing function (if `is_training`, skip some augmentations)
+        This will be applied for training dataset to perform data augmentation
+        """
 
         def __image_preprocessing(parsed_tensor):
             image = parsed_tensor[self.flag['image']]
