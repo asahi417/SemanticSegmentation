@@ -175,15 +175,15 @@ class DeepLab3:
                 name=scope)
             self.__update_op_metric = tf.group(*[update_op_miou, update_op_acc])
             self.__init_op_metric = tf.variables_initializer(
-                var_list=tf.get_collection(tf.GraphKeys.LOCAL_VARIABLES, scope=scope),
+                var_list=tf.get_collection(tf.GraphKeys.LOCAL_VARIABLES, scope='summary'),
                 name=scope)
 
             # summary to be shown every update/training step
-            self.__update_summary = tf.summary.merge(
+            self.__update_summary = tf.summary.merge([
                 tf.summary.scalar('loss', self.__loss),
                 tf.summary.scalar('global_step', self.__global_step),
                 tf.summary.scalar('learning_rate', learning_rate)
-            )
+            ])
 
             def get_summary(__name):
                 logging_image_number = 5
@@ -480,7 +480,7 @@ class DeepLab3:
         try:
             logger.info('## start training ##')
             while True:
-                logger.info('Step:', step)
+                logger.info('Step: %i' % step)
 
                 ############
                 # TRAINING #
@@ -496,13 +496,13 @@ class DeepLab3:
                             [self.__train_op, self.__update_op_metric, self.__update_summary],
                             feed_dict=feed_dict)
                         self.__writer.add_summary(summary)
+
                     except tf.errors.OutOfRangeError:
                         summary, pix_acc, miou = self.__session.run(
                             [self.__summary_train, self.__pixel_accuracy, self.__miou], feed_dict=feed_dict)
                         self.__writer.add_summary(summary)
-                        self.__session.run(self.__miou, self.__pixel_accuracy)
-                        logger.info(' - [train] pixel accuracy:', pix_acc)
-                        logger.info(' - [train] mean IoU      :', miou)
+                        logger.info(' - [train] pixel accuracy: %0.3f' % pix_acc)
+                        logger.info(' - [train] mean IoU      : %0.3f' % miou)
                         break
 
                 #########
@@ -520,9 +520,8 @@ class DeepLab3:
                         summary, pix_acc, miou = self.__session.run(
                             [self.__summary_valid, self.__pixel_accuracy, self.__miou], feed_dict=feed_dict)
                         self.__writer.add_summary(summary)
-                        self.__session.run(self.__miou, self.__pixel_accuracy)
-                        logger.info(' - [valid] pixel accuracy:', pix_acc)
-                        logger.info(' - [valid] mean IoU      :', miou)
+                        logger.info(' - [valid] pixel accuracy: %0.3f' % pix_acc)
+                        logger.info(' - [valid] mean IoU      : %0.3f' % miou)
                         break
 
                 # check training status

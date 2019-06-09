@@ -20,7 +20,7 @@ class TestTFRecord:
 
     def __init__(self, data_name):
 
-        self.__iterator = deep_semantic_segmentation.data.TFRecord(data_name=data_name)
+        self.__iterator = deep_semantic_segmentation.data.TFRecord(data_name=data_name, batch_size=1)
 
         self.__output = os.path.join(self.__iterator.tfrecord_dir, 'examples')
         if not os.path.exists(self.__output):

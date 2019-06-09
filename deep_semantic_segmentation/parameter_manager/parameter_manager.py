@@ -5,8 +5,10 @@ from . import default_parameters
 from ..util import CHECKPOINTS
 from ..data import VALID_DATA_NAME
 
+
 def get_dict_from_instance(__instance):
     return {key: value for key, value in __instance.__dict__.items() if not key.startswith('__') and not callable(key)}
+
 
 DEFAULT_PARAMETERS = dict(
     DeepLab=get_dict_from_instance(default_parameters.DeepLab)
@@ -15,12 +17,14 @@ DEFAULT_PARAMETERS = dict(
 
 class ParameterManager:
 
-
     def __init__(self,
                  model_name,
                  checkpoint_version: int=None,
-                 checkpoint_dir: str=CHECKPOINTS,
+                 checkpoint_dir: str=None,
                  **kwargs):
+
+        if checkpoint_dir is None:
+            checkpoint_dir = os.path.join(CHECKPOINTS, 'model', model_name)
         self.default_dict = DEFAULT_PARAMETERS[model_name]
 
         if checkpoint_version is None:

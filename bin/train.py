@@ -8,6 +8,7 @@ MODELS = dict(
     deeplab=deep_semantic_segmentation.model.DeepLab3
 )
 
+
 def get_options():
     parser = argparse.ArgumentParser(description='Decode tfrecord.',
                                      formatter_class=argparse.RawTextHelpFormatter)
