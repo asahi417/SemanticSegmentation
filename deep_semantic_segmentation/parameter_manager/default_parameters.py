@@ -6,10 +6,14 @@ class DeepLab:
 
     # optimization
     base_learning_rate = 0.0001
-    training_number_of_steps = 3000
     decay_method = 'poly'
     batch_norm = True
-    batch_size = 4
+
+    # training_number_of_steps = 3000
+    # batch_size = 4
+
+    training_number_of_steps = 6000
+    batch_size = 2
 
     # When using 'xception_65' or 'resnet_v1' model variants, we set
     # atrous_rates = [6, 12, 18] (output stride 16) and decoder_output_stride = 4.output_stride = 16

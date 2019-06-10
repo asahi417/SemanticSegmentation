@@ -38,6 +38,7 @@ class DeepLab3:
         )
 
         self.__logger.info('Build Graph: DeepLab')
+        self.__logger.info(' - checkpoint: %s' % self.__option.checkpoint_dir)
         self.__build_graph()
 
         self.__session = tf.Session(config=tf.ConfigProto(log_device_placement=False))
@@ -502,8 +503,8 @@ class DeepLab3:
                             [self.__summary_train, self.__pixel_accuracy, self.__miou, self.__global_step],
                             feed_dict=feed_dict)
                         self.__writer.add_summary(summary, global_step=step)
-                        logger.info(' - [train] pixel accuracy: %0.3f' % pix_acc)
-                        logger.info(' - [train] mean IoU      : %0.3f' % miou)
+                        logger.info(' - [train] pixel accuracy: %0.4f' % pix_acc)
+                        logger.info(' - [train] mean IoU      : %0.4f' % miou)
                         break
 
                 #########
@@ -522,14 +523,15 @@ class DeepLab3:
                             [self.__summary_valid, self.__pixel_accuracy, self.__miou, self.__global_step],
                             feed_dict=feed_dict)
                         self.__writer.add_summary(summary, global_step=step)
-                        logger.info(' - [valid] pixel accuracy: %0.3f' % pix_acc)
-                        logger.info(' - [valid] mean IoU      : %0.3f' % miou)
+                        logger.info(' - [valid] pixel accuracy: %0.4f' % pix_acc)
+                        logger.info(' - [valid] mean IoU      : %0.4f' % miou)
                         break
 
                 # check training status
                 step = self.__session.run(self.__global_step)
                 if step > self.__option('training_number_of_steps'):
-                    logger.info('>>> Training has been completed. <<<')
+                    logger.info('>>> Training has been completed (current step exceeds training step: %i > %i) . <<<'
+                                % (step, self.__option('training_number_of_steps')))
                     break
 
         except KeyboardInterrupt:
