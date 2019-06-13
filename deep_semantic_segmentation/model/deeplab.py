@@ -500,14 +500,17 @@ class DeepLab:
                 self.__session.run([self.__init_op_iterator, self.__init_op_metric], feed_dict=feed_dict)
                 # write image
                 self.__writer.add_summary(self.__session.run(self.__summary_img_train, feed_dict=feed_dict))
+                print()
                 while True:
                     try:
                         _, _, summary, step = self.__session.run(
                             [self.__train_op, self.__update_op_metric, self.__update_summary, self.__global_step],
                             feed_dict=feed_dict)
                         self.__writer.add_summary(summary, global_step=step)
+                        print(' - step: %i\r' % step, end='', flush=False)
 
                     except tf.errors.OutOfRangeError:
+                        print()
                         summary, pix_acc, miou, step = self.__session.run(
                             [self.__summary_train, self.__pixel_accuracy, self.__miou, self.__global_step],
                             feed_dict=feed_dict)
