@@ -495,14 +495,13 @@ class DeepLab:
                 ############
                 # TRAINING #
                 ############
+                logger.info(' * training')
                 feed_dict = {self.__is_training: True}
-                # initialize iterator and metric operator
+                logger.info('  - initialization')
                 self.__session.run([self.__init_op_iterator, self.__init_op_metric], feed_dict=feed_dict)
-                logger.info(' - initialization')
-                # write image
-                self.__writer.add_summary(self.__session.run(self.__summary_img_train, feed_dict=feed_dict))
-                logger.info(' - write sample image to tensorboard')
-                logger.info(' - training start')
+                # logger.info('  - writing images to tensorboard')
+                # self.__writer.add_summary(self.__session.run(self.__summary_img_train, feed_dict=feed_dict))
+                logger.info('  - training start')
                 print()
                 while True:
                     try:
@@ -518,18 +517,20 @@ class DeepLab:
                             [self.__summary_train, self.__pixel_accuracy, self.__miou, self.__global_step],
                             feed_dict=feed_dict)
                         self.__writer.add_summary(summary, global_step=step)
-                        logger.info(' - [train] pixel accuracy: %0.4f' % pix_acc)
-                        logger.info(' - [train] mean IoU      : %0.4f' % miou)
+                        logger.info('  - [train] pixel accuracy: %0.4f' % pix_acc)
+                        logger.info('  - [train] mean IoU      : %0.4f' % miou)
                         break
 
                 #########
                 # VALID #
                 #########
+                logger.info(' * validation')
                 feed_dict = {self.__is_training: False}
-                # initialize iterator and metric operator
+                logger.info('  - initialization')
                 self.__session.run([self.__init_op_iterator, self.__init_op_metric], feed_dict=feed_dict)
-                # write image
+                logger.info('  - writing images to tensorboard')
                 self.__writer.add_summary(self.__session.run(self.__summary_img_valid, feed_dict=feed_dict))
+                logger.info('  - validation start')
                 while True:
                     try:
                         self.__session.run(self.__update_op_metric, feed_dict=feed_dict)
@@ -538,8 +539,8 @@ class DeepLab:
                             [self.__summary_valid, self.__pixel_accuracy, self.__miou, self.__global_step],
                             feed_dict=feed_dict)
                         self.__writer.add_summary(summary, global_step=step)
-                        logger.info(' - [valid] pixel accuracy: %0.4f' % pix_acc)
-                        logger.info(' - [valid] mean IoU      : %0.4f' % miou)
+                        logger.info('  - [valid] pixel accuracy: %0.4f' % pix_acc)
+                        logger.info('  - [valid] mean IoU      : %0.4f' % miou)
                         break
 
                 # check training status
