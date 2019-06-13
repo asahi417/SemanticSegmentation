@@ -12,9 +12,10 @@ from ..util import create_log, load_finetune_model
 slim = tf.contrib.slim
 
 
-class DeepLab3:
+class DeepLab:
 
     def __init__(self,
+                 data_name: str,
                  checkpoint: str = None,
                  checkpoint_version: int = None,
                  **kwargs):
@@ -22,6 +23,7 @@ class DeepLab3:
         self.__logger.info(__doc__)
 
         self.__option = ParameterManager(model_name='DeepLab',
+                                         data_name=data_name,
                                          checkpoint_dir=checkpoint,
                                          checkpoint_version=checkpoint_version,
                                          **kwargs)
@@ -29,7 +31,12 @@ class DeepLab3:
         self.__checkpoint = checkpoint
         self.__checkpoint_finetune = load_finetune_model(self.__option('model_variant'))
         self.__iterator = TFRecord(data_name=self.__option('data_name'),
-                                   batch_size=self.__option('batch_size'))
+                                   crop_height=self.__option('crop_height'),
+                                   crop_width=self.__option('crop_width'),
+                                   batch_size=self.__option('batch_size'),
+                                   min_resize_value=self.__option('min_resize_value'),
+                                   max_resize_value=self.__option('max_resize_value'),
+                                   resize_factor=self.__option('output_stride'))
         self.__feature = DeepImageFeature(
             model_variant=self.__option('model_variant'),
             output_stride=self.__option('output_stride'),
@@ -59,8 +66,8 @@ class DeepLab3:
                 raise ValueError('backbone network is not found')
             self.__warm_start = False
 
-    def __if_batch_norm(self, is_training_tensor):
-        batch_norm_tensor = tf.convert_to_tensor(self.__option('batch_norm'), dtype=tf.bool)
+    def __if_batch_norm(self, is_training_tensor, is_batch_norm):
+        batch_norm_tensor = tf.convert_to_tensor(is_batch_norm, dtype=tf.bool)
         return tf.math.logical_and(is_training_tensor, batch_norm_tensor)
 
     def __build_graph(self):
@@ -68,7 +75,9 @@ class DeepLab3:
         # graph #
         #########
         self.__is_training = tf.placeholder_with_default(True, [], name='is_training')
-        is_batch_norm = self.__if_batch_norm(self.__is_training)
+        is_batch_norm_finetune = self.__if_batch_norm(self.__is_training, self.__option('fine_tune_batch_norm'))
+        is_batch_norm_aspp = self.__if_batch_norm(self.__is_training, self.__option('aspp_batch_norm'))
+        is_batch_decoder = self.__if_batch_norm(self.__is_training, self.__option('decoder_batch_norm'))
 
         # setup TFRecord iterator and get image/segmentation map
         iterator, self.__init_op_iterator = self.__iterator.get_iterator(is_training=self.__is_training)
@@ -85,19 +94,19 @@ class DeepLab3:
 
         # feature from pre-trained backbone network (ResNet/Xception):
         # (batch, crop_size/output_stride, crop_size/output_stride, 2048)
-        feature, variable_endpoints = self.__feature.feature(self.__image, is_training_for_batch_norm=is_batch_norm)
+        feature, variable_endpoints = self.__feature.feature(self.__image, is_batch_norm=is_batch_norm_finetune)
         self.__logger.info(' * feature shape: %s' % feature.shape)
 
         # aspp feature: (batch, crop_size/output_stride, crop_size/output_stride, 2048)
         aspp_feature = self.__aspp(feature,
                                    is_training=self.__is_training,
-                                   is_batch_norm=is_batch_norm)
+                                   is_batch_norm=is_batch_norm_aspp)
         self.__logger.info(' * aspp feature shape: %s' % aspp_feature.shape)
 
         # decoder
         if self.__option('decoder_output_stride') is not None:
             final_logit = self.__decoder(aspp_feature,
-                                         is_batch_norm=is_batch_norm,
+                                         is_batch_norm=is_batch_decoder,
                                          variable_endpoints=variable_endpoints)
             self.__logger.info(' * decoder output shape: %s' % final_logit.shape)
             # output_stride = self.__option.decoder_output_stride
@@ -275,7 +284,7 @@ class DeepLab3:
                                             name='top_k_percent_pixels')
                 final_loss = tf.reduce_sum(top_k_loss)
                 num_present = tf.reduce_sum(tf.cast(tf.not_equal(final_loss, 0.0)), tf.float32)
-                final_loss = final_loss/(num_present + 1e-8)
+                final_loss = final_loss/(num_present + 1e-6)
                 return final_loss
 
     def __class_logit(self,
@@ -357,9 +366,9 @@ class DeepLab3:
                                                             scope='feature_projection')
                             # At this point, feature maps (feature/low_level_feature) have to be
                             # original_size/self.__option.decoder_output_stride, so reshape to be that shape.
-                            scaled_height = util_tf.scale_dimension(self.__option('crop_size_height'),
-                                                                    1.0/self.__option('decoder_output_stride'))
-                            scaled_width = util_tf.scale_dimension(self.__option('crop_size_width'),
+                            scaled_height = util_tf.scale_dimension(self.__option('crop_height'),
+                                                                    1.0 / self.__option('decoder_output_stride'))
+                            scaled_width = util_tf.scale_dimension(self.__option('crop_width'),
                                                                    1.0 / self.__option('decoder_output_stride'))
                             low_level_feature = util_tf.resize_bilinear(low_level_feature, [scaled_height, scaled_width])
                             feature = util_tf.resize_bilinear(feature, [scaled_height, scaled_width])

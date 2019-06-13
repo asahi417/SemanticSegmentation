@@ -1,18 +1,17 @@
 import os
 import tensorflow as tf
-from . import ade_20k
+from . import ade20k
 from . import image_process_util
 from ..util import create_log, TFRECORDS
 
 VALID_DATA_NAME = dict(
     ade20k=dict(
         iterator=dict(
-            training=ade_20k.BatchFeeder('training'),
-            validation=ade_20k.BatchFeeder('validation')
+            training=ade20k.BatchFeeder('training'),
+            validation=ade20k.BatchFeeder('validation')
         ),
-        ignore_value=ade_20k.IGNORE_VALUE,
-        num_class=ade_20k.NUM_CLASS,
-        shape=[ade_20k.CROP_SIZE_HEIGHT, ade_20k.CROP_SIZE_WIDTH]
+        ignore_value=ade20k.IGNORE_VALUE,
+        num_class=ade20k.NUM_CLASS
     )
 )
 MEAN_RGB = [123.15, 115.90, 103.06]
@@ -62,12 +61,17 @@ class TFRecord:
     )
 
     def __init__(self,
-                 data_name: str='ade20k',
+                 crop_height: int,
+                 crop_width: int,
+                 data_name: str,
                  format_image: str='jpg',
                  format_segmentation: str='png',
                  min_scale_factor: float=0.5,
                  max_scale_factor: float=2.0,
                  scale_factor_step_size: float=0.25,
+                 min_resize_value: int=None,
+                 max_resize_value: int=None,
+                 resize_factor: int=None,
                  batch_size: int=8):
         """ Constructor of TFRecorder """
         if data_name not in VALID_DATA_NAME.keys():
@@ -80,10 +84,14 @@ class TFRecord:
         if not os.path.exists(self.__tfrecord_path):
             os.makedirs(self.__tfrecord_path, exist_ok=True)
 
-        self.crop_height, self.crop_width = VALID_DATA_NAME[data_name]['shape']
+        self.crop_height = crop_height
+        self.crop_width = crop_width
         self.scale_factor_step_size = scale_factor_step_size
         self.min_scale_factor = min_scale_factor
         self.max_scale_factor = max_scale_factor
+        self.min_resize_value = min_resize_value
+        self.max_resize_value = max_resize_value
+        self.resize_factor = resize_factor
         self.batch_size = batch_size
 
         # mask white as padding region
@@ -138,6 +146,18 @@ class TFRecord:
         def __image_preprocessing(parsed_tensor):
             image = parsed_tensor[self.flag['image']]
             segmentation = parsed_tensor[self.flag['segmentation']]
+
+
+            def __resize(__image, __label):
+                if self.min_resize_value is not None or self.max_resize_value is not None:
+                    __image, __label = image_process_util.resize_to_range(
+                            image=__image,
+                            label=__label,
+                            min_size=self.min_resize_value,
+                            max_size=self.max_resize_value,
+                            factor=self.resize_factor,
+                            align_corners=True)
+                return __image, __label
 
             def __augment_pad(__image, __label):
                 """ augment image by mean padding to get [self.crop_height, self.crop_width, channel] """
@@ -203,6 +223,7 @@ class TFRecord:
                 return __image_return, __label_return
 
             # preprocess
+            image, segmentation = __resize(image, segmentation)
             image, segmentation = __augment_scale(image, segmentation)
             image, segmentation = __augment_pad(image, segmentation)
             image, segmentation = __augment_crop(image, segmentation)

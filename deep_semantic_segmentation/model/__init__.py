@@ -1,4 +1,4 @@
 from .finetune_models.feature_extractor import DeepImageFeature
-from .base_model import BaseModel
-from .deep_lab_v3 import DeepLab3
+from .vis_image import VisImage
+from .deeplab import DeepLab
 from . import util_tf

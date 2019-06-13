@@ -1,9 +1,8 @@
 import os
 import json
 from glob import glob
-from . import default_parameters
+from . import deeplab
 from ..util import CHECKPOINTS
-from ..data import VALID_DATA_NAME
 
 
 def get_dict_from_instance(__instance):
@@ -11,21 +10,26 @@ def get_dict_from_instance(__instance):
 
 
 DEFAULT_PARAMETERS = dict(
-    DeepLab=get_dict_from_instance(default_parameters.DeepLab)
+    DeepLab=dict(
+        ade20k=get_dict_from_instance(deeplab.ade20k.Parameter),
+        pascal=get_dict_from_instance(deeplab.pascal.Parameter)
+    )
 )
 
 
 class ParameterManager:
 
     def __init__(self,
-                 model_name,
+                 model_name: str,
+                 data_name: str,
                  checkpoint_version: int=None,
                  checkpoint_dir: str=None,
+                 debug: bool = False,
                  **kwargs):
 
         if checkpoint_dir is None:
             checkpoint_dir = os.path.join(CHECKPOINTS, 'model', model_name)
-        self.default_dict = DEFAULT_PARAMETERS[model_name]
+        self.default_dict = DEFAULT_PARAMETERS[model_name][data_name]
 
         if checkpoint_version is None:
             parameter = dict()
@@ -34,12 +38,14 @@ class ParameterManager:
                     parameter[k] = kwargs[k]
                 else:
                     parameter[k] = v
-            height, width = VALID_DATA_NAME[self.default_dict['data_name']]['shape']
-            parameter['crop_size_height'] = height
-            parameter['crop_size_width'] = width
         else:
             parameter = None
-        self.checkpoint_dir, self.parameter = self.checkpoint_version(checkpoint_dir, parameter, checkpoint_version)
+
+        if debug:
+            self.checkpoint_dir = None
+            self.parameter = parameter
+        else:
+            self.checkpoint_dir, self.parameter = self.checkpoint_version(checkpoint_dir, parameter, checkpoint_version)
 
     def __call__(self, key):
         if key not in self.parameter.keys():

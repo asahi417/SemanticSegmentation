@@ -10,8 +10,6 @@ from ..util import WORK_DIR, create_log
 
 DATA = 'data/ade20k'
 NUM_CLASS = 151
-CROP_SIZE_HEIGHT = 513
-CROP_SIZE_WIDTH = 513
 IGNORE_VALUE = 0
 BASE_URL = "http://data.csail.mit.edu/places/ADEchallenge"
 FILENAME = "ADEChallengeData2016.zip"

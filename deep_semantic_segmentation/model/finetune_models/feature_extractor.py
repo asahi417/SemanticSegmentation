@@ -51,13 +51,11 @@ MODEL_CONFIG = {
 def get_arg_scope(model_variant, arg_scope_instance, **kwargs):
     if 'resnet' in model_variant:
         return arg_scope_instance(
-            # weight_decay=kwargs['weight_decay'],
             batch_norm_decay=0.95,
             batch_norm_epsilon=1e-5,
             batch_norm_scale=True)
     elif 'xception' in model_variant:
         return arg_scope_instance(
-            # weight_decay=kwargs['weight_decay'],
             batch_norm_decay=0.9997,
             batch_norm_epsilon=1e-3,
             batch_norm_scale=True,
@@ -71,8 +69,7 @@ class DeepImageFeature:
 
     def __init__(self,
                  model_variant,
-                 # weight_decay=0.0001,
-                 output_stride=8,
+                 output_stride: int=8,
                  multi_grid=None,
                  use_bounded_activation=False):
 
@@ -85,7 +82,6 @@ class DeepImageFeature:
         self.__num_classes = None  # this results in final logit dimension, and should be None
         self.__arg_scope = get_arg_scope(model_variant,
                                          model_config['arg_scope'],
-                                         # weight_decay=weight_decay,
                                          regularize_depthwise=False,
                                          use_bounded_activation=use_bounded_activation)
         self.__network = model_config['network']
@@ -95,7 +91,7 @@ class DeepImageFeature:
 
     def feature(self,
                 images,
-                is_training_for_batch_norm,
+                is_batch_norm,
                 reuse=None):
         """
          Parameter
@@ -109,7 +105,7 @@ class DeepImageFeature:
             feature, endpoint = self.__network(
                 self.__preprocess(images, tf.float32),
                 num_classes=self.__num_classes,
-                is_training=is_training_for_batch_norm,
+                is_training=is_batch_norm,
                 global_pool=False,
                 output_stride=self.__output_stride,
                 multi_grid=self.__multi_grid,

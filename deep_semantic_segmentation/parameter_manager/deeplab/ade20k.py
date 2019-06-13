@@ -1,19 +1,33 @@
-""" Set default parameters """
+""" default parameters """
 
 
-class DeepLab:
+class Parameter:
     """ Deep Lab v3 (plus) """
 
-    # optimization
-    base_learning_rate = 0.0001
+    # Use 0.007 when training on PASCAL augmented training set, train_aug. When
+    # fine-tuning on PASCAL trainval set, use learning rate=0.0001.
+    base_learning_rate = 0.00005
     decay_method = 'poly'
-    batch_norm = True
 
-    # training_number_of_steps = 3000
+    # In order to fine tune the BN layers, one needs to use large batch size (> 12), and set
+    # fine_tune_batch_norm = True. If the users have limited GPU memory at hand, please fine-tune
+    # from provided checkpoints whose batch norm parameters have been trained, and use smaller
+    # learning rate with fine_tune_batch_norm = False.
+    fine_tune_batch_norm = False
+
+    # training_number_of_steps = 150000
     # batch_size = 4
 
-    training_number_of_steps = 6000
+    training_number_of_steps = 300000
     batch_size = 2
+
+    # shape
+    crop_height = 513
+    crop_width = 513
+
+    # balanced resize in preprocessing
+    min_resize_value = 513
+    max_resize_value = 513
 
     # When using 'xception_65' or 'resnet_v1' model variants, we set
     # atrous_rates = [6, 12, 18] (output stride 16) and decoder_output_stride = 4.output_stride = 16
@@ -39,7 +53,10 @@ class DeepLab:
     use_bounded_activation = False
 
     aspp_with_separable_conv = True
+    aspp_batch_norm = False
+
     decoder_with_separable_conv = True
+    decoder_batch_norm = False
 
     # # if True, upsample logit, else downsample segmentation map
     # upsample_logits = True
