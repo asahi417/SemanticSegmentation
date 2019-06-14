@@ -122,6 +122,7 @@ class DeepLab:
         logit = util_tf.resize_bilinear(logit, [self.__iterator.crop_height, self.__iterator.crop_width])
         self.__logger.info(' * reshaped logit shape: %s' % logit.shape)
 
+        self.__logit = logit
         self.__prob = tf.nn.softmax(logit)
         self.__logger.info(' * prob shape: %s' % self.__prob.shape)
 
@@ -478,7 +479,7 @@ class DeepLab:
                     scope='dropout')
         return concat_logits
 
-    def train(self):
+    def train(self, debug=False):
         """ Model training method. Logs are all saved in tensorboard.
         - Every epoch, store segmentation result as image (training/validation)
         - Every epoch, store and show metric (training/validation)
@@ -499,17 +500,27 @@ class DeepLab:
                 feed_dict = {self.__is_training: True}
                 logger.info('  - initialization')
                 self.__session.run([self.__init_op_iterator, self.__init_op_metric], feed_dict=feed_dict)
+
+                # this process takes about 5 min, so skip when training
                 # logger.info('  - writing images to tensorboard')
                 # self.__writer.add_summary(self.__session.run(self.__summary_img_train, feed_dict=feed_dict))
+
                 logger.info('  - training start')
                 print()
                 while True:
                     try:
-                        _, _, summary, step = self.__session.run(
-                            [self.__train_op, self.__update_op_metric, self.__update_summary, self.__global_step],
-                            feed_dict=feed_dict)
+                        if debug:
+                            _, _, summary, step, logit, loss = self.__session.run(
+                                [self.__train_op, self.__update_op_metric, self.__update_summary, self.__global_step,
+                                 self.__logit, self.__loss],
+                                feed_dict=feed_dict)
+                            print(np.mean(logit), loss)
+                        else:
+                            _, _, summary, step = self.__session.run(
+                                [self.__train_op, self.__update_op_metric, self.__update_summary, self.__global_step],
+                                feed_dict=feed_dict)
+                            print('   - step: %i\r' % step, end='', flush=False)
                         self.__writer.add_summary(summary, global_step=step)
-                        print('   - step: %i\r' % step, end='', flush=False)
 
                     except tf.errors.OutOfRangeError:
                         print()

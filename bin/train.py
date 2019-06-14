@@ -28,4 +28,4 @@ if __name__ == '__main__':
         model = model_constructor(data_name=args.data, batch_size=args.batch_size)
     else:
         model = model_constructor(data_name=args.data)
-    model.train()
+    model.train(debug=True)
