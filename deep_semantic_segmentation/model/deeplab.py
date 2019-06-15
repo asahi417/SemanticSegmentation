@@ -142,7 +142,8 @@ class DeepLab:
 
         # L2 weight decay
         if self.__option('weight_decay') != 0.0:
-            l2_loss = self.__option('weight_decay') * tf.add_n([tf.nn.l2_loss(v) for v in trainable_variables])
+            # l2_loss = self.__option('weight_decay') * tf.add_n([tf.nn.l2_loss(v) for v in trainable_variables])
+            l2_loss = 0.0
         else:
             l2_loss = 0.0
         self.__loss += l2_loss
