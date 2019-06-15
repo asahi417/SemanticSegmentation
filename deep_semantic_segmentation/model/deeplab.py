@@ -72,9 +72,6 @@ class DeepLab:
         # graph #
         #########
         self.__is_training = tf.placeholder_with_default(True, [], name='is_training')
-        # is_batch_norm_finetune = self.__if_batch_norm(self.__is_training, self.__option('fine_tune_batch_norm'))
-        # is_batch_norm_aspp = self.__if_batch_norm(self.__is_training, self.__option('aspp_batch_norm'))
-        # is_batch_decoder = self.__if_batch_norm(self.__is_training, self.__option('decoder_batch_norm'))
 
         # setup TFRecord iterator and get image/segmentation map
         iterator, self.__init_op_iterator = self.__iterator.get_iterator(is_training=self.__is_training)
@@ -87,11 +84,6 @@ class DeepLab:
             image, [None, self.__iterator.crop_height, self.__iterator.crop_width, 3], name="input_image")
         self.__segmentation = tf.placeholder_with_default(
             segmentation, [None, self.__iterator.crop_height, self.__iterator.crop_width, 1], name="segmentation")
-        # batch_size = self.__option('batch_size')
-        # self.__image = tf.placeholder_with_default(
-        #     image, [batch_size, self.__iterator.crop_height, self.__iterator.crop_width, 3], name="input_image")
-        # self.__segmentation = tf.placeholder_with_default(
-        #     segmentation, [batch_size, self.__iterator.crop_height, self.__iterator.crop_width, 1], name="segmentation")
         self.__logger.info(' * image shape: %s' % self.__image.shape)
 
         # feature from pre-trained backbone network (ResNet/Xception):
@@ -109,10 +101,8 @@ class DeepLab:
                                          is_training=self.__is_training,
                                          variable_endpoints=variable_endpoints)
             self.__logger.info(' * decoder output shape: %s' % final_logit.shape)
-            # output_stride = self.__option.decoder_output_stride
         else:
             final_logit = aspp_feature
-            # output_stride = self.__option.output_stride
 
         # multi-scale class-wise logit
         logit = self.__class_logit(final_logit)
@@ -121,11 +111,8 @@ class DeepLab:
         # up-sample logit to be same as segmentation map
         logit = util_tf.resize_bilinear(logit, [self.__iterator.crop_height, self.__iterator.crop_width])
         self.__logger.info(' * reshaped logit shape: %s' % logit.shape)
-
-        self.__logit = logit
         self.__prob = tf.nn.softmax(logit)
         self.__logger.info(' * prob shape: %s' % self.__prob.shape)
-
         self.__prediction = tf.cast(tf.expand_dims(tf.argmax(self.__prob, axis=-1), axis=-1), tf.int64)
         self.__logger.info(' * prediction shape: %s' % self.__prediction.shape)
 
@@ -258,17 +245,10 @@ class DeepLab:
         )
         # pixel-wise cross entropy
         if self.__option('top_k_percent_pixels') == 1.0:
-            self.__logger.info(' * labels shape: %s' % segmentation_flatten_one_hot.shape)
-            self.__logger.info(' * logits shape: %s' % logit_flatten.shape)
             loss = tf.losses.softmax_cross_entropy(
                 segmentation_flatten_one_hot,
                 logit_flatten,
-                weights=not_ignore_mask,
-            )
-            self.__logger.info(' * loss shape: %s' % loss.shape)
-            self.__logger.info(' * not_ignore_mask shape: %s' % not_ignore_mask.shape)
-            self.__logger.info(' * applied loss shape: %s' % loss.shape)
-
+                weights=not_ignore_mask)
             return loss
         else:
             # batch size
@@ -501,7 +481,7 @@ class DeepLab:
                     scope='dropout')
         return concat_logits
 
-    def train(self, debug=False):
+    def train(self):
         """ Model training method. Logs are all saved in tensorboard.
         - Every epoch, store segmentation result as image (training/validation)
         - Every epoch, store and show metric (training/validation)
@@ -531,17 +511,10 @@ class DeepLab:
                 print()
                 while True:
                     try:
-                        if debug:
-                            _, _, summary, step, logit, loss = self.__session.run(
-                                [self.__train_op, self.__update_op_metric, self.__update_summary, self.__global_step,
-                                 self.__logit, self.__loss],
-                                feed_dict=feed_dict)
-                            print('logit, loss:', np.mean(logit), loss)
-                        else:
-                            _, _, summary, step = self.__session.run(
-                                [self.__train_op, self.__update_op_metric, self.__update_summary, self.__global_step],
-                                feed_dict=feed_dict)
-                            print('   - step: %i\r' % step, end='', flush=False)
+                        _, _, summary, step, loss = self.__session.run(
+                            [self.__train_op, self.__update_op_metric, self.__update_summary, self.__global_step, self.__loss],
+                            feed_dict=feed_dict)
+                        print('   - step: %i, loss: %0.5f\r' % (step, loss), end='', flush=False)
                         self.__writer.add_summary(summary, global_step=step)
 
                     except tf.errors.OutOfRangeError:

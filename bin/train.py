@@ -36,4 +36,4 @@ if __name__ == '__main__':
 
     model_constructor = MODELS[args.model]
     model = model_constructor(data_name=args.data, **parameters)
-    model.train(debug=True)
+    model.train()

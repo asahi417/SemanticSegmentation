@@ -1,5 +1,7 @@
 import os
 import json
+import string
+import random
 from glob import glob
 from . import deeplab
 from ..util import CHECKPOINTS
@@ -22,7 +24,7 @@ class ParameterManager:
     def __init__(self,
                  model_name: str,
                  data_name: str,
-                 checkpoint_version: int=None,
+                 checkpoint_version: str=None,
                  checkpoint_dir: str=None,
                  debug: bool = False,
                  **kwargs):
@@ -53,16 +55,22 @@ class ParameterManager:
         return self.parameter[key]
 
     @staticmethod
-    def checkpoint_version(checkpoint_dir: str,
+    def random_string(string_length=10):
+        """Generate a random string of fixed length """
+        letters = string.ascii_lowercase
+        return ''.join(random.choice(letters) for i in range(string_length))
+
+    def checkpoint_version(self,
+                           checkpoint_dir: str,
                            config: dict = None,
-                           version: int = None):
+                           version: str = None):
         """ Checkpoint versioner: Either of `config` or `version` need to be specified (`config` has priority)
 
          Parameter
         ---------------------
         checkpoint_dir: directory where specific model's checkpoints are (will be) saved, eg) `checkpoint/cnn`
         config: parameter configuration to find same setting checkpoint
-        version: number of checkpoint to warmstart from
+        version: checkpoint id
 
          Return
         --------------------
@@ -79,11 +87,11 @@ class ParameterManager:
             raise ValueError('either of `version` or `config` is needed.')
 
         if version is not None:
-            checkpoints = glob(os.path.join(checkpoint_dir, 'v%i' % version, 'hyperparameters.json'))
-            if len(checkpoints) == 0:
-                raise ValueError('No checkpoint: %s, %s' % (checkpoint_dir, version))
-            elif len(checkpoints) > 1:
-                raise ValueError('Multiple checkpoint found: %s, %s' % (checkpoint_dir, version))
+            checkpoints = glob(os.path.join(checkpoint_dir, version, 'hyperparameters.json'))
+            if len(checkpoints) >= 2:
+                raise ValueError('Checkpoints are duplicated')
+            elif len(checkpoints) == 0:
+                raise ValueError('No checkpoint: %s' % os.path.join(checkpoint_dir, version))
             else:
                 parameter = json.load(open(checkpoints[0]))
                 target_checkpoints_dir = checkpoints[0].replace('/hyperparameters.json', '')
@@ -92,24 +100,30 @@ class ParameterManager:
         elif config is not None:
             # check if there are any checkpoints with same hyperparameters
             target_checkpoints = []
+            version_name = []
             for parameter_path in glob(os.path.join(checkpoint_dir, '*/hyperparameters.json')):
                 i = parameter_path.replace('/hyperparameters.json', '')
                 json_dict = json.load(open(parameter_path))
+                version_name.append(i.split('/')[-1])
                 if config == json_dict:
                     target_checkpoints.append(i)
+            print('Existing checkpoints:', version_name)
             if len(target_checkpoints) >= 2:
                 raise ValueError('Checkpoints are duplicated')
             elif len(target_checkpoints) == 1:
                 if os.path.exists(os.path.join(target_checkpoints[0], 'model.ckpt.index')):
                     inp = input(
                         'found a checkpoint with same configuration\n'
-                        'do you want to delet existing checkpoint? (`y` to delete it)')
+                        'do you want to delete existing checkpoint? (`y` to delete it)')
                     if inp == 'y':
                         os.remove(os.path.join(target_checkpoints[0], 'model.ckpt.index'))
                     return target_checkpoints[0], config
 
-            new_checkpoint_id = len(glob(os.path.join(checkpoint_dir, '*/hyperparameters.json')))
-            new_checkpoint_path = os.path.join(checkpoint_dir, 'v%i' % new_checkpoint_id)
+            while True:
+                new_version = self.random_string()
+                if new_version not in version_name:
+                    break
+            new_checkpoint_path = os.path.join(checkpoint_dir, new_version)
             os.makedirs(new_checkpoint_path, exist_ok=True)
             with open(os.path.join(new_checkpoint_path, 'hyperparameters.json'), 'w') as outfile:
                 json.dump(config, outfile)
