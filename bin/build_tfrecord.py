@@ -2,6 +2,7 @@
 
 import deep_semantic_segmentation
 import argparse
+import os
 
 
 def get_options():

@@ -1,17 +1,19 @@
 import os
 import tensorflow as tf
-from . import ade20k
+from . import ade20k, pascal
 from . import image_process_util
 from ..util import create_log, TFRECORDS
 
 VALID_DATA_NAME = dict(
     ade20k=dict(
-        iterator=dict(
-            training=ade20k.BatchFeeder('training'),
-            validation=ade20k.BatchFeeder('validation')
-        ),
+        iterator=ade20k.BatchFeeder,
         ignore_value=ade20k.IGNORE_VALUE,
         num_class=ade20k.NUM_CLASS
+    ),
+    pascal=dict(
+        iterator=pascal.BatchFeeder,
+        ignore_value=pascal.IGNORE_VALUE,
+        num_class=pascal.NUM_CLASS
     )
 )
 MEAN_RGB = [123.15, 115.90, 103.06]
@@ -255,7 +257,8 @@ class TFRecord:
                     continue
 
             self.__logger.info('* data type: %s -> %s' % (__type, tfrecord_path))
-            iterator = self.__batch_feeders[__type]
+            iterator = self.__batch_feeders(__type)
+            # iterator = self.__batch_feeders[__type]
 
             with tf.python_io.TFRecordWriter(tfrecord_path) as tfrecord_writer:
                 for n, data in enumerate(iterator):
