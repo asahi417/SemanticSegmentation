@@ -6,7 +6,7 @@ class Parameter:
 
     # Use 0.007 when training on PASCAL augmented training set, train_aug. When
     # fine-tuning on PASCAL trainval set, use learning rate=0.0001.
-    base_learning_rate = 0.0000005
+    base_learning_rate = 0.0000001
     decay_method = 'poly'
 
     # In order to fine tune the BN layers, one needs to use large batch size (> 12), and set
