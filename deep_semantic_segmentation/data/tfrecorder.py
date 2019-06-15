@@ -63,9 +63,9 @@ class TFRecord:
     )
 
     def __init__(self,
-                 crop_height: int,
-                 crop_width: int,
                  data_name: str,
+                 crop_height: int=None,
+                 crop_width: int=None,
                  format_image: str='jpg',
                  format_segmentation: str='png',
                  min_scale_factor: float=0.5,
@@ -108,6 +108,8 @@ class TFRecord:
 
     def get_iterator(self, is_training):
         """ get `tf.data.Iterator` and iterator initializer """
+        assert self.crop_height is not None
+        assert self.crop_width is not None
         tfrecord_path = tf.cond(
             is_training,
             lambda: os.path.join(self.__tfrecord_path, 'training.tfrecord'),
