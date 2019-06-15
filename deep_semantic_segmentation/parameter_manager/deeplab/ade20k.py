@@ -19,7 +19,7 @@ class Parameter:
     # batch_size = 4
 
     training_number_of_steps = 300000
-    batch_size = 2
+    batch_size = 3
 
     # shape
     crop_height = 513

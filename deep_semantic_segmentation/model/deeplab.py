@@ -41,7 +41,8 @@ class DeepLab:
             model_variant=self.__option('model_variant'),
             output_stride=self.__option('output_stride'),
             multi_grid=self.__option('multi_grid'),
-            use_bounded_activation=self.__option('use_bounded_activation')
+            use_bounded_activation=self.__option('use_bounded_activation'),
+            finetune_batch_norm=self.__option('fine_tune_batch_norm')
         )
 
         self.__logger.info('Build Graph: DeepLab')
@@ -66,18 +67,14 @@ class DeepLab:
                 raise ValueError('backbone network is not found')
             self.__warm_start = False
 
-    def __if_batch_norm(self, is_training_tensor, is_batch_norm):
-        batch_norm_tensor = tf.convert_to_tensor(is_batch_norm, dtype=tf.bool)
-        return tf.math.logical_and(is_training_tensor, batch_norm_tensor)
-
     def __build_graph(self):
         #########
         # graph #
         #########
         self.__is_training = tf.placeholder_with_default(True, [], name='is_training')
-        is_batch_norm_finetune = self.__if_batch_norm(self.__is_training, self.__option('fine_tune_batch_norm'))
-        is_batch_norm_aspp = self.__if_batch_norm(self.__is_training, self.__option('aspp_batch_norm'))
-        is_batch_decoder = self.__if_batch_norm(self.__is_training, self.__option('decoder_batch_norm'))
+        # is_batch_norm_finetune = self.__if_batch_norm(self.__is_training, self.__option('fine_tune_batch_norm'))
+        # is_batch_norm_aspp = self.__if_batch_norm(self.__is_training, self.__option('aspp_batch_norm'))
+        # is_batch_decoder = self.__if_batch_norm(self.__is_training, self.__option('decoder_batch_norm'))
 
         # setup TFRecord iterator and get image/segmentation map
         iterator, self.__init_op_iterator = self.__iterator.get_iterator(is_training=self.__is_training)
@@ -86,32 +83,30 @@ class DeepLab:
         segmentation = data[self.__iterator.flag['segmentation']]
 
         # input/output placeholder
-        # self.__image = tf.placeholder_with_default(
-        #     image, [None, self.__iterator.crop_height, self.__iterator.crop_width, 3], name="input_image")
-        # self.__segmentation = tf.placeholder_with_default(
-        #     segmentation, [None, self.__iterator.crop_height, self.__iterator.crop_width, 1], name="segmentation")
-        batch_size = self.__option('batch_size')
         self.__image = tf.placeholder_with_default(
-            image, [batch_size, self.__iterator.crop_height, self.__iterator.crop_width, 3], name="input_image")
+            image, [None, self.__iterator.crop_height, self.__iterator.crop_width, 3], name="input_image")
         self.__segmentation = tf.placeholder_with_default(
-            segmentation, [batch_size, self.__iterator.crop_height, self.__iterator.crop_width, 1], name="segmentation")
+            segmentation, [None, self.__iterator.crop_height, self.__iterator.crop_width, 1], name="segmentation")
+        # batch_size = self.__option('batch_size')
+        # self.__image = tf.placeholder_with_default(
+        #     image, [batch_size, self.__iterator.crop_height, self.__iterator.crop_width, 3], name="input_image")
+        # self.__segmentation = tf.placeholder_with_default(
+        #     segmentation, [batch_size, self.__iterator.crop_height, self.__iterator.crop_width, 1], name="segmentation")
         self.__logger.info(' * image shape: %s' % self.__image.shape)
 
         # feature from pre-trained backbone network (ResNet/Xception):
         # (batch, crop_size/output_stride, crop_size/output_stride, 2048)
-        feature, variable_endpoints = self.__feature.feature(self.__image, is_batch_norm=is_batch_norm_finetune)
+        feature, variable_endpoints = self.__feature.feature(self.__image, is_training=self.__is_training)
         self.__logger.info(' * feature shape: %s' % feature.shape)
 
         # aspp feature: (batch, crop_size/output_stride, crop_size/output_stride, 2048)
-        aspp_feature = self.__aspp(feature,
-                                   is_training=self.__is_training,
-                                   is_batch_norm=is_batch_norm_aspp)
+        aspp_feature = self.__aspp(feature, is_training=self.__is_training)
         self.__logger.info(' * aspp feature shape: %s' % aspp_feature.shape)
 
         # decoder
         if self.__option('decoder_output_stride') is not None:
             final_logit = self.__decoder(aspp_feature,
-                                         is_batch_norm=is_batch_decoder,
+                                         is_training=self.__is_training,
                                          variable_endpoints=variable_endpoints)
             self.__logger.info(' * decoder output shape: %s' % final_logit.shape)
             # output_stride = self.__option.decoder_output_stride
@@ -142,8 +137,8 @@ class DeepLab:
 
         # L2 weight decay
         if self.__option('weight_decay') != 0.0:
-            # l2_loss = self.__option('weight_decay') * tf.add_n([tf.nn.l2_loss(v) for v in trainable_variables])
-            l2_loss = 0.0
+            l2_loss = self.__option('weight_decay') * tf.add_n([tf.nn.l2_loss(v) for v in trainable_variables])
+            # l2_loss = 0.0
         else:
             l2_loss = 0.0
         self.__loss += l2_loss
@@ -261,7 +256,6 @@ class DeepLab:
             tf.not_equal(segmentation_flatten, self.__iterator.segmentation_ignore_value),
             tf.float32
         )
-        self.__not_ignore_mask = not_ignore_mask
         # pixel-wise cross entropy
         if self.__option('top_k_percent_pixels') == 1.0:
             self.__logger.info(' * labels shape: %s' % segmentation_flatten_one_hot.shape)
@@ -271,20 +265,18 @@ class DeepLab:
                 logit_flatten,
                 weights=not_ignore_mask,
             )
-            # loss = tf.nn.softmax_cross_entropy_with_logits_v2(
-            #     labels=segmentation_flatten_one_hot,
-            #     logits=logit_flatten)
-            # loss = tf.multiply(loss, not_ignore_mask)
-            # loss = tf.reduce_sum(loss)
             self.__logger.info(' * loss shape: %s' % loss.shape)
             self.__logger.info(' * not_ignore_mask shape: %s' % not_ignore_mask.shape)
             self.__logger.info(' * applied loss shape: %s' % loss.shape)
 
             return loss
         else:
-            loss = tf.nn.softmax_cross_entropy_with_logits_v2(
-                labels=segmentation_flatten_one_hot,
-                logits=logit_flatten)
+            # batch size
+            loss = tf.losses.softmax_cross_entropy(
+                segmentation_flatten_one_hot,
+                logit_flatten,
+                weights=not_ignore_mask,
+                reduction=None)
             with tf.name_scope('pixel_wise_softmax_loss_hard_example_mining'):
                 num_pixels = tf.cast(tf.shape(logit)[0], tf.float32)
                 # Compute the top_k_percent pixels based on current training step.
@@ -340,7 +332,7 @@ class DeepLab:
 
     def __decoder(self,
                   feature,
-                  is_batch_norm,
+                  is_training,
                   variable_endpoints,
                   reuse: bool=False):
         """ Decoder with low-level-feature as skip connection
@@ -355,24 +347,30 @@ class DeepLab:
          Return
         ----------------
         """
-        # batch norm config
-        batch_norm_params = {
-            'is_training': is_batch_norm,
-            'decay': 0.9997,
-            'epsilon': 1e-5,
-            'scale': True,
-        }
 
-        activation_fn = tf.nn.relu6 if self.__option('use_bounded_activation') else tf.nn.relu
-        with slim.arg_scope(
-                [slim.conv2d, slim.separable_conv2d],
-                weights_regularizer=slim.l2_regularizer(self.__option('weight_decay')),
-                activation_fn=activation_fn,
-                normalizer_fn=slim.batch_norm,
-                padding='SAME',
-                stride=1,
-                reuse=reuse):
-            with slim.arg_scope([slim.batch_norm], **batch_norm_params):
+        scopes = dict(
+            weights_regularizer=slim.l2_regularizer(self.__option('weight_decay')),
+            activation_fn=tf.nn.relu6 if self.__option('use_bounded_activation') else tf.nn.relu,
+            padding='SAME',
+            stride=1,
+            reuse=reuse
+        )
+        # batch norm config
+        if self.__option('decoder_batch_norm'):
+            batch_norm_values = [slim.batch_norm]
+            batch_norm_scopes = dict(
+                is_training=is_training,
+                decay=0.9997,
+                epsilon=1e-5,
+                scale=True,
+            )
+            scopes['normalizer_fn'] = slim.batch_norm
+        else:
+            batch_norm_values = list()
+            batch_norm_scopes = dict()
+
+        with slim.arg_scope([slim.conv2d, slim.separable_conv2d], **scopes):
+            with slim.arg_scope(batch_norm_values, **batch_norm_scopes):
                 with tf.variable_scope('decoder'):
                     # Low level feature to be added to the decoder as skip connection.
                     # Of `low_level_feature_endpoints` is not a single layer, it will be U-Net/SegNet like architecture.
@@ -416,7 +414,6 @@ class DeepLab:
     def __aspp(self,
                feature,
                is_training,
-               is_batch_norm,
                reuse: bool=False):
         """ ASPP (Atrous Spatial Pyramid Pooling) layer + Image Pooling
 
@@ -433,28 +430,33 @@ class DeepLab:
         tensor with same height, width and `depth` as channel
         """
 
+        scopes = dict(
+            weights_regularizer=slim.l2_regularizer(self.__option('weight_decay')),
+            activation_fn=tf.nn.relu6 if self.__option('use_bounded_activation') else tf.nn.relu,
+            padding='SAME',
+            stride=1,
+            reuse=reuse
+        )
         # batch norm config
-        batch_norm_params = {
-            'is_training': is_batch_norm,
-            'decay': 0.9997,
-            'epsilon': 1e-5,
-            'scale': True,
-        }
+        if self.__option('aspp_batch_norm'):
+            batch_norm_values = [slim.batch_norm]
+            batch_norm_scopes = dict(
+                is_training=is_training,
+                decay=0.9997,
+                epsilon=1e-5,
+                scale=True,
+            )
+            scopes['normalizer_fn'] = slim.batch_norm
+        else:
+            batch_norm_values = list()
+            batch_norm_scopes = dict()
 
-        activation_fn = tf.nn.relu6 if self.__option('use_bounded_activation') else tf.nn.relu
         height = tf.shape(feature)[1]
         width = tf.shape(feature)[2]
         logits = []
 
-        with slim.arg_scope(
-                [slim.conv2d, slim.separable_conv2d],
-                weights_regularizer=slim.l2_regularizer(self.__option('weight_decay')),
-                activation_fn=activation_fn,
-                normalizer_fn=slim.batch_norm,
-                padding='SAME',
-                stride=1,
-                reuse=reuse):
-            with slim.arg_scope([slim.batch_norm], **batch_norm_params):
+        with slim.arg_scope([slim.conv2d, slim.separable_conv2d], **scopes):
+            with slim.arg_scope(batch_norm_values, **batch_norm_scopes):
                 # image pooling (global average pooling + 1x1 convolution)
                 with tf.variable_scope('global_average_pooling'):
                     global_average_pooling = tf.reduce_mean(feature, axis=[1, 2], keepdims=True)
@@ -530,11 +532,11 @@ class DeepLab:
                 while True:
                     try:
                         if debug:
-                            _, _, summary, step, logit, loss, mask = self.__session.run(
+                            _, _, summary, step, logit, loss = self.__session.run(
                                 [self.__train_op, self.__update_op_metric, self.__update_summary, self.__global_step,
-                                 self.__logit, self.__loss, self.__not_ignore_mask],
+                                 self.__logit, self.__loss],
                                 feed_dict=feed_dict)
-                            print('logit, loss, mask:', np.mean(logit), loss, np.sum(mask)/len(mask) * 100)
+                            print('logit, loss:', np.mean(logit), loss)
                         else:
                             _, _, summary, step = self.__session.run(
                                 [self.__train_op, self.__update_op_metric, self.__update_summary, self.__global_step],

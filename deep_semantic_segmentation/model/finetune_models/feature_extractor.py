@@ -71,7 +71,8 @@ class DeepImageFeature:
                  model_variant,
                  output_stride: int=8,
                  multi_grid=None,
-                 use_bounded_activation=False):
+                 use_bounded_activation=False,
+                 finetune_batch_norm: bool=False):
 
         if model_variant not in MODEL_CONFIG.keys():
             raise ValueError('Unknown model variant %s.' % model_variant)
@@ -79,6 +80,7 @@ class DeepImageFeature:
         model_config = MODEL_CONFIG[model_variant]
         self.__output_stride = output_stride
         self.__multi_grid = multi_grid
+        self.__finetune_batch_norm = finetune_batch_norm
         self.__num_classes = None  # this results in final logit dimension, and should be None
         self.__arg_scope = get_arg_scope(model_variant,
                                          model_config['arg_scope'],
@@ -91,7 +93,7 @@ class DeepImageFeature:
 
     def feature(self,
                 images,
-                is_batch_norm,
+                is_training,
                 reuse=None):
         """
          Parameter
@@ -100,6 +102,9 @@ class DeepImageFeature:
         is_training_for_batch_norm: bool tensor
         reuse: bool
         """
+
+        finetune_batch_norm = tf.convert_to_tensor(self.__finetune_batch_norm, dtype=tf.bool)
+        is_batch_norm = tf.math.logical_and(is_training, finetune_batch_norm)
 
         with slim.arg_scope(self.__arg_scope):
             feature, endpoint = self.__network(
