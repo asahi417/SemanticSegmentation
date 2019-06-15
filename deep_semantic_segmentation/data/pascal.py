@@ -32,10 +32,9 @@ def download(raw_data_dir: str=None):
         LOGGER.info('downloading data: %s -> %s' % (url, path_zip))
         urllib.request.urlretrieve(url, path_zip)
 
-    path_unzip = path_zip.split('.')[0]
-    path_unzip_voc = os.path.join(path_unzip, 'VOCdevkit', 'VOC2012')
+    path_unzip_voc = os.path.join(raw_data_dir, 'VOCdevkit', 'VOC2012')
     if not os.path.exists(path_unzip_voc):
-        LOGGER.info('unzipping: %s -> %s' % (path_zip, path_unzip))
+        LOGGER.info('unzipping: %s -> %s' % (path_zip, path_unzip_voc))
         with tarfile.open(path_zip, "r") as zip_ref:
             zip_ref.extractall(raw_data_dir)
 
