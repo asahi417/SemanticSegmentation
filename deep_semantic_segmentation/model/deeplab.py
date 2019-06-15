@@ -489,6 +489,7 @@ class DeepLab:
         """
         logger = create_log(os.path.join(self.__option.checkpoint_dir, 'train.log'))
         step = 0
+        loss = 0
 
         try:
             logger.info('## start training ##')
@@ -511,10 +512,11 @@ class DeepLab:
                 print()
                 while True:
                     try:
-                        _, _, summary, step, loss = self.__session.run(
+                        _, _, summary, step, tmp_loss = self.__session.run(
                             [self.__train_op, self.__update_op_metric, self.__update_summary, self.__global_step, self.__loss],
                             feed_dict=feed_dict)
-                        print('   - step: %i, loss: %0.5f\r' % (step, loss), end='', flush=False)
+                        print('   - step: %i, loss: %0.5f (%0.5f)\r' % (step, tmp_loss, tmp_loss-loss), end='', flush=False)
+                        loss = tmp_loss
                         self.__writer.add_summary(summary, global_step=step)
 
                     except tf.errors.OutOfRangeError:
