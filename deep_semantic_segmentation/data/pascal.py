@@ -3,6 +3,7 @@ import urllib.request
 import tarfile
 import random
 import numpy as np
+from glob import glob
 from PIL import Image
 from ..util import WORK_DIR, create_log
 
@@ -43,7 +44,8 @@ def download(raw_data_dir: str=None):
         LOGGER.info('convert color to gray scale')
         os.makedirs(gray_seg_dir)
         seg_dir = os.path.join(path_unzip_voc, 'SegmentationClass')
-        convert_rgb_to_gray(seg_dir, gray_seg_dir)
+        seg_list = glob(os.path.join(seg_dir, '*.png'))
+        convert_rgb_to_gray(seg_list, gray_seg_dir)
 
     return path_unzip_voc
 

@@ -5,7 +5,7 @@ class Parameter:
     """ Deep Lab v3 (plus) """
 
     # optimization
-    base_learning_rate = 0.0001
+    base_learning_rate = 0.00001
     decay_method = 'poly'
 
     # In order to fine tune the BN layers, one needs to use large batch size (> 12), and set
@@ -17,16 +17,16 @@ class Parameter:
     # training_number_of_steps = 150000
     # batch_size = 4
 
-    training_number_of_steps = 300000
-    batch_size = 2
+    training_number_of_steps = 30000
+    batch_size = 4
 
     # shape
     crop_size_height = 513
     crop_size_width = 513
 
     # balanced resize in preprocessing
-    min_resize_value = 513
-    max_resize_value = 513
+    min_resize_value = None
+    max_resize_value = None
 
     # When using 'xception_65' or 'resnet_v1' model variants, we set
     # atrous_rates = [6, 12, 18] (output stride 16) and decoder_output_stride = 4.output_stride = 16
@@ -42,7 +42,7 @@ class Parameter:
     # Use 0.0001 for ResNet model variants.
     weight_decay = 0.00004
 
-    model_variant = 'xception_65'
+    model_variant = 'xception_65_coco'
     data_name = 'pascal'
 
     # Defaults to None. Set multi_grid = [1, 2, 4] when using provided
