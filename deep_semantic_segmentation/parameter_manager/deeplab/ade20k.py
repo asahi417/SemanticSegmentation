@@ -42,7 +42,6 @@ class Parameter:
     # For weight_decay, use 0.00004 for MobileNet-V2 or Xcpetion model variants.
     # Use 0.0001 for ResNet model variants.
     weight_decay = 0.00004
-    # weight_decay = 0.0
 
     model_variant = 'xception_65'
     data_name = 'ade20k'

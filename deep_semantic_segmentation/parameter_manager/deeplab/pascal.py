@@ -12,17 +12,14 @@ class Parameter:
     # fine_tune_batch_norm = True. If the users have limited GPU memory at hand, please fine-tune
     # from provided checkpoints whose batch norm parameters have been trained, and use smaller
     # learning rate with fine_tune_batch_norm = False.
-    batch_norm = False
-
-    # training_number_of_steps = 150000
-    # batch_size = 4
+    fine_tune_batch_norm = False
 
     training_number_of_steps = 30000
     batch_size = 4
 
     # shape
-    crop_size_height = 513
-    crop_size_width = 513
+    crop_height = 513
+    crop_width = 513
 
     # balanced resize in preprocessing
     min_resize_value = None
@@ -52,7 +49,10 @@ class Parameter:
     use_bounded_activation = False
 
     aspp_with_separable_conv = True
+    aspp_batch_norm = False
+
     decoder_with_separable_conv = True
+    decoder_batch_norm = False
 
     # # if True, upsample logit, else downsample segmentation map
     # upsample_logits = True
