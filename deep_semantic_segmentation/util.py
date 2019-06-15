@@ -14,7 +14,7 @@ CHECKPOINTS = os.path.join(WORK_DIR, 'checkpoints')
 CHECKPOINTS_FINETUNES = dict(
     xception_41=os.path.join(CHECKPOINTS, 'finetune', 'xception_41', 'model.ckpt'),
     xception_65=os.path.join(CHECKPOINTS, 'finetune', 'xception_65', 'model.ckpt'),
-    xception_65_coco=os.path.join(CHECKPOINTS, 'finetune', 'xception_65_coco', 'model.ckpt'),
+    xception_65_coco=os.path.join(CHECKPOINTS, 'finetune', 'xception_65_coco', 'x65-b2u1s2p-d48-2-3x256-sc-cr300k_init.ckpt'),
     xception_71=os.path.join(CHECKPOINTS, 'finetune', 'xception_71', 'model.ckpt')
 )
 CHECKPOINTS_FINETUNES_URL = dict(
