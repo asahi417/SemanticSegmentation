@@ -16,13 +16,18 @@ def get_options():
     parser.add_argument('-b', '--batch_size', help='Batch size', default=None, type=int, **share_param)
     parser.add_argument('-d', '--data', help='Dataset', default='ade20k', type=str, **share_param)
     parser.add_argument('-m', '--model', help='Model', default='deeplab', type=str, **share_param)
+    parser.add_argument('--weight_decay', help='weight decay', action='store_true')
     return parser.parse_args()
 
 
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-
     args = get_options()
+
+    # parameters = dict(
+    #
+    # )
+
     model_constructor = MODELS[args.model]
     if args.batch_size is not None:
         model = model_constructor(data_name=args.data, batch_size=args.batch_size)
