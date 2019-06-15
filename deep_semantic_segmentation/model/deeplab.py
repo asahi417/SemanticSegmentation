@@ -86,10 +86,15 @@ class DeepLab:
         segmentation = data[self.__iterator.flag['segmentation']]
 
         # input/output placeholder
+        # self.__image = tf.placeholder_with_default(
+        #     image, [None, self.__iterator.crop_height, self.__iterator.crop_width, 3], name="input_image")
+        # self.__segmentation = tf.placeholder_with_default(
+        #     segmentation, [None, self.__iterator.crop_height, self.__iterator.crop_width, 1], name="segmentation")
+        batch_size = self.__option('batch_size')
         self.__image = tf.placeholder_with_default(
-            image, [None, self.__iterator.crop_height, self.__iterator.crop_width, 3], name="input_image")
+            image, [batch_size, self.__iterator.crop_height, self.__iterator.crop_width, 3], name="input_image")
         self.__segmentation = tf.placeholder_with_default(
-            segmentation, [None, self.__iterator.crop_height, self.__iterator.crop_width, 1], name="segmentation")
+            segmentation, [batch_size, self.__iterator.crop_height, self.__iterator.crop_width, 1], name="segmentation")
         self.__logger.info(' * image shape: %s' % self.__image.shape)
 
         # feature from pre-trained backbone network (ResNet/Xception):
@@ -245,8 +250,6 @@ class DeepLab:
         segmentation = tf.cast(segmentation, tf.int32)
         segmentation = tf.stop_gradient(segmentation)
 
-        # self.__iterator.segmentation_ignore_value
-
         logit_flatten = tf.reshape(logit, shape=[-1, self.__iterator.num_class])
 
         segmentation_flatten = tf.reshape(segmentation, shape=[-1])
@@ -257,14 +260,30 @@ class DeepLab:
             tf.not_equal(segmentation_flatten, self.__iterator.segmentation_ignore_value),
             tf.float32
         )
+        self.__not_ignore_mask = not_ignore_mask
         # pixel-wise cross entropy
-        loss = tf.nn.softmax_cross_entropy_with_logits_v2(
-            labels=segmentation_flatten_one_hot,
-            logits=logit_flatten)
-        loss = tf.multiply(loss, not_ignore_mask)
         if self.__option('top_k_percent_pixels') == 1.0:
-            return tf.reduce_sum(loss)
+            self.__logger.info(' * labels shape: %s' % segmentation_flatten_one_hot.shape)
+            self.__logger.info(' * logits shape: %s' % logit_flatten.shape)
+            loss = tf.losses.softmax_cross_entropy(
+                segmentation_flatten_one_hot,
+                logit_flatten,
+                weights=not_ignore_mask,
+            )
+            # loss = tf.nn.softmax_cross_entropy_with_logits_v2(
+            #     labels=segmentation_flatten_one_hot,
+            #     logits=logit_flatten)
+            # loss = tf.multiply(loss, not_ignore_mask)
+            # loss = tf.reduce_sum(loss)
+            self.__logger.info(' * loss shape: %s' % loss.shape)
+            self.__logger.info(' * not_ignore_mask shape: %s' % not_ignore_mask.shape)
+            self.__logger.info(' * applied loss shape: %s' % loss.shape)
+
+            return loss
         else:
+            loss = tf.nn.softmax_cross_entropy_with_logits_v2(
+                labels=segmentation_flatten_one_hot,
+                logits=logit_flatten)
             with tf.name_scope('pixel_wise_softmax_loss_hard_example_mining'):
                 num_pixels = tf.cast(tf.shape(logit)[0], tf.float32)
                 # Compute the top_k_percent pixels based on current training step.
@@ -510,11 +529,11 @@ class DeepLab:
                 while True:
                     try:
                         if debug:
-                            _, _, summary, step, logit, loss = self.__session.run(
+                            _, _, summary, step, logit, loss, mask = self.__session.run(
                                 [self.__train_op, self.__update_op_metric, self.__update_summary, self.__global_step,
-                                 self.__logit, self.__loss],
+                                 self.__logit, self.__loss, self.__not_ignore_mask],
                                 feed_dict=feed_dict)
-                            print(np.mean(logit), loss)
+                            print('logit, loss, mask:', np.mean(logit), loss, np.sum(mask)/len(mask) * 100)
                         else:
                             _, _, summary, step = self.__session.run(
                                 [self.__train_op, self.__update_op_metric, self.__update_summary, self.__global_step],

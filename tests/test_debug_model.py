@@ -3,6 +3,7 @@
 import deep_semantic_segmentation
 import argparse
 import os
+import shutil
 
 
 MODELS = dict(
@@ -23,4 +24,4 @@ if __name__ == '__main__':
     args = get_options()
     model_constructor = MODELS[args.model]
     graph = model_constructor(checkpoint='./tmp.model', data_name=args.data, model_variant=args.network)
-    os.removedirs('./tmp.model')
+    shutil.rmtree('./tmp.model', ignore_errors=True)
