@@ -247,10 +247,9 @@ class TFRecord:
     def convert_to_tfrecord(self, progress_interval: int=1000):
         """ Converting data to TFRecord """
 
-        data_types = self.__batch_feeders.keys()
         self.__logger.info('start converting to tfrecord format')
 
-        for __type in data_types:
+        for __type in ['training', 'validation']:
             tfrecord_path = os.path.join(self.__tfrecord_path, __type + '.tfrecord')
 
             if os.path.exists(tfrecord_path):
