@@ -10,7 +10,7 @@ from ..util import WORK_DIR, create_log
 
 DATA = 'data/ade20k'
 NUM_CLASS = 151
-IGNORE_VALUE = 0
+IGNORE_VALUE = 255
 BASE_URL = "http://data.csail.mit.edu/places/ADEchallenge"
 FILENAME = "ADEChallengeData2016.zip"
 LOGGER = create_log()

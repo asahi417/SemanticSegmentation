@@ -150,37 +150,8 @@ class DeepLab:
         # evaluation metrics #
         ######################
         with tf.variable_scope('summary'):
-            # tf.metric, which returns `metric` and `update_op`
-            # - update_op has to be updated every training step
-            # - metric consists of the value averaging over the past results stored by update_op
-            scope = 'evaluation_metrics'
-
-            predictions = tf.cast(tf.reshape(self.__prediction, shape=[-1]), tf.int64)
-            labels = tf.cast(tf.reshape(self.__segmentation, shape=[-1]), tf.int64)
-
-            not_ignore_mask = tf.not_equal(labels, self.__iterator.segmentation_ignore_value)
-
-            predictions = predictions * tf.cast(not_ignore_mask, tf.int64)
-            labels = labels * tf.cast(not_ignore_mask, tf.int64)
-
-            # mean IoU (intersection over union)
-            self.__miou, update_op_miou = tf.metrics.mean_iou(
-                predictions=predictions,
-                labels=labels,
-                weights=tf.cast(not_ignore_mask, tf.float32),
-                name=scope,
-                num_classes=self.__iterator.num_class)
-            # pixel accuracy
-            self.__pixel_accuracy, update_op_acc = tf.metrics.accuracy(
-                predictions=predictions,
-                labels=labels,
-                weights=not_ignore_mask,
-                name=scope)
-            self.__update_op_metric = tf.group(*[update_op_miou, update_op_acc])
-            self.__init_op_metric = tf.variables_initializer(
-                var_list=tf.get_collection(tf.GraphKeys.LOCAL_VARIABLES, scope='summary'),
-                name=scope)
-
+            self.__miou, self.__pixel_accuracy, self.__update_op_metric, self.__init_op_metric \
+                = self.__get_metrics(self.__prediction, self.__segmentation)
             # summary to be shown every update/training step
             self.__update_summary = tf.summary.merge([
                 tf.summary.scalar('loss', self.__loss),
@@ -227,6 +198,42 @@ class DeepLab:
             self.__logger.info('%s: %s' % (var.name, str(sh)))
             n_var += np.prod(sh)
         self.__logger.info('total variables: %i' % n_var)
+
+    def __get_metrics(self,
+                      prediction,
+                      segmentation):
+        # tf.metric, which returns `metric` and `update_op`
+        # - update_op has to be updated every training step
+        # - metric consists of the value averaging over the past results stored by update_op
+        scope = 'evaluation_metrics'
+
+        segmentation = tf.cast(segmentation, tf.int64)
+        segmentation = tf.stop_gradient(segmentation)
+        segmentation_flatten = tf.reshape(segmentation, shape=[-1])
+        not_ignore_mask = tf.not_equal(segmentation_flatten, self.__iterator.segmentation_ignore_value)
+        segmentation_flatten = segmentation_flatten * tf.cast(not_ignore_mask, tf.int64)
+
+        prediction_flatten = tf.cast(tf.reshape(prediction, shape=[-1]), tf.int64)
+        prediction_flatten = prediction_flatten * tf.cast(not_ignore_mask, tf.int64)
+
+        # mean IoU (intersection over union)
+        miou, update_op_miou = tf.metrics.mean_iou(
+            predictions=prediction_flatten,
+            labels=segmentation_flatten,
+            weights=tf.cast(not_ignore_mask, tf.float32),
+            name=scope,
+            num_classes=self.__iterator.num_class)
+        # pixel accuracy
+        pixel_accuracy, update_op_acc = tf.metrics.accuracy(
+            predictions=prediction_flatten,
+            labels=segmentation_flatten,
+            weights=tf.cast(not_ignore_mask, tf.float32),
+            name=scope)
+        update_op_metric = tf.group(*[update_op_miou, update_op_acc])
+        init_op_metric = tf.variables_initializer(
+            var_list=tf.get_collection(tf.GraphKeys.LOCAL_VARIABLES, scope='summary'),
+            name=scope)
+        return miou, pixel_accuracy, update_op_metric, init_op_metric
 
     def __pixel_wise_softmax(self,
                              logit,
