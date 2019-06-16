@@ -184,7 +184,7 @@ class DeepLab:
             # saver
             self.__saver = tf.train.Saver()
             self.__saver_backbone = tf.train.Saver(
-                tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=self.__option('model_variant'))
+                tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=self.__feature.name)
             )
 
         ###########
