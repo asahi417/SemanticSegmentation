@@ -61,7 +61,7 @@ def get_learning_rate(base_learning_rate: float,
         raise ValueError('Unknown learning policy.')
 
 
-def coloring_segmentation(segmentation, num_class, shape):
+def coloring_segmentation(segmentation, shape):
     """ from segmentation map with class label to color images """
     [height, width] = shape
 
@@ -83,7 +83,7 @@ def coloring_segmentation(segmentation, num_class, shape):
         return tensor_colormap
 
     color_map = segmentation_colormap()
-    vis = tf.cast(tf.floor(segmentation * 255 / num_class), tf.int64)
+    vis = tf.cast(segmentation, tf.int64)
     vis_flatten = tf.reshape(vis, shape=[-1])
     vis_flatten_colored = tf.map_fn(lambda x: color_map[x], vis_flatten, dtype=tf.int64)
     vis_flatten_colored = tf.cast(vis_flatten_colored, dtype=tf.uint8)

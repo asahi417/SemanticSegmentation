@@ -78,7 +78,8 @@ def create_log(out_file_path=None):
         if len(logger.handlers) > 1:  # if there are already handler, return it
             return logger
         else:
-            logger.setLevel(logging.DEBUG)
+            # logger.setLevel(logging.DEBUG)
+            logger.setLevel(logging.INFO)
             formatter = logging.Formatter("H1, %(asctime)s %(levelname)8s %(message)s")
 
             handler = logging.FileHandler(out_file_path)
@@ -103,7 +104,8 @@ def create_log(out_file_path=None):
         if len(logger.handlers) > 0:  # if there are already handler, return it
             return logger
         else:  # in case of no, make new output handler
-            logger.setLevel(logging.DEBUG)
+            # logger.setLevel(logging.DEBUG)
+            logger.setLevel(logging.INFO)
             formatter = logging.Formatter("H1, %(asctime)s %(levelname)8s %(message)s")
             handler.setFormatter(formatter)
             logger.addHandler(handler)

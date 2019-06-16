@@ -48,7 +48,6 @@ class VisImage:
         self.segmentation = data[self.__iterator.flag['segmentation']]
         self.segmentation_color = util_tf.coloring_segmentation(
             self.segmentation,
-            self.__iterator.num_class,
             [self.__iterator.crop_height, self.__iterator.crop_width])
         self.filename = data[self.__iterator.flag['filename']]
 
@@ -70,7 +69,7 @@ class VisImage:
             image, seg, filename = images[i], segs[i], filenames[i]
 
             print('image shape       :', image.shape)
-            print('segmentation shape:', seg.shape)
+            print('segmentation shape:', seg.shape, np.unique(seg))
             print('filenames         :', filename)
 
             base_name = str(filename).split('/')[-1].replace('.jpg', '.png')

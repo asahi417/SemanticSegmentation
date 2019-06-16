@@ -51,13 +51,28 @@ def download(raw_data_dir: str=None):
 
 def convert_rgb_to_gray(file_list, output_dir):
     """ segmentation map has to be gray scale, but VOC Pascal keeps each segmentation as RGB color image
-    so convert them into gray scale"""
+    (index is class label)
+    so convert them into gray scale
+    https://qiita.com/tktktks10/items/0f551aea27d2f62ef708
+    """
+    unique_val = list()
     for i in file_list:
-        file_name = i.split('/')[-1]
-        image_array = np.array(Image.open(i))
-        image_array = np.rint(image_array).astype('uint8')
-        image_pil = Image.fromarray(image_array, 'L')
-        image_pil.save(os.path.join(output_dir, file_name))
+        unique_val += rgb_to_gray(i, output_dir)
+    LOGGER.info('unique values in segmentation map')
+    LOGGER.info(' - unique values: %s' % set(unique_val))
+    LOGGER.info(' - unique values size: %i' % len(set(unique_val)))
+    if NUM_CLASS != len(set(unique_val)) - 1:
+        raise ValueError('class label is wrong!]\n - set : %i\n - data: %i' % (NUM_CLASS, len(set(unique_val)) - 1))
+
+
+def rgb_to_gray(file, output_dir):
+    img_array = Image.open(file).convert('P')
+    numpied = np.array(img_array).astype('uint8')
+    image_pil = Image.fromarray(numpied, 'L')
+    file_name = file.split('/')[-1]
+    image_pil.save(os.path.join(output_dir, file_name))
+    unique_val = np.unique(numpied).tolist()
+    return unique_val
 
 
 class BatchFeeder:
@@ -80,7 +95,7 @@ class BatchFeeder:
 
         """
 
-        map_to_file_list = dict(training='train.txt', validation='val.txt', )
+        map_to_file_list = dict(training='train.txt', validation='val.txt')
         path_to_data_dir = download(raw_data_dir)
 
         def get_files(__type):
