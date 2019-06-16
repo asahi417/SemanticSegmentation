@@ -159,6 +159,8 @@ class DeepLab:
             not_ignore_mask = tf.cast(
                 tf.not_equal(labels, self.__iterator.segmentation_ignore_value),
                 tf.float32)
+            predictions = predictions * not_ignore_mask
+            labels = labels * not_ignore_mask
             # mean IoU (intersection over union)
             self.__miou, update_op_miou = tf.metrics.mean_iou(
                 predictions=predictions,
@@ -230,17 +232,16 @@ class DeepLab:
         assert logit.get_shape().as_list()[1:2] == segmentation.get_shape().as_list()[1:2]
         segmentation = tf.cast(segmentation, tf.int32)
         segmentation = tf.stop_gradient(segmentation)
-
-        logit_flatten = tf.reshape(logit, shape=[-1, self.__iterator.num_class])
-
         segmentation_flatten = tf.reshape(segmentation, shape=[-1])
-        segmentation_flatten_one_hot = tf.one_hot(
-            segmentation_flatten, self.__iterator.num_class, on_value=1.0, off_value=0.0)
-
         not_ignore_mask = tf.cast(
             tf.not_equal(segmentation_flatten, self.__iterator.segmentation_ignore_value),
             tf.float32
         )
+        segmentation_flatten_one_hot = tf.one_hot(
+            segmentation_flatten*not_ignore_mask, self.__iterator.num_class, on_value=1.0, off_value=0.0
+        )
+        logit_flatten = tf.reshape(logit, shape=[-1, self.__iterator.num_class])
+        logit_flatten = logit_flatten*not_ignore_mask
         # pixel-wise cross entropy
         if self.__option('top_k_percent_pixels') == 1.0:
             loss = tf.losses.softmax_cross_entropy(
