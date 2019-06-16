@@ -39,8 +39,8 @@ class Parameter:
     # Use 0.0001 for ResNet model variants.
     weight_decay = 0.00004
 
-    # model_variant = 'xception_65_coco'
-    model_variant = 'xception_65'
+    model_variant = 'xception_65_coco'
+    # model_variant = 'xception_65'
     data_name = 'pascal'
 
     # Defaults to None. Set multi_grid = [1, 2, 4] when using provided
