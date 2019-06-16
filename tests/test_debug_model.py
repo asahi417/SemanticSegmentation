@@ -23,5 +23,5 @@ def get_options():
 if __name__ == '__main__':
     args = get_options()
     model_constructor = MODELS[args.model]
-    graph = model_constructor(checkpoint='./tmp.model', data_name=args.data, model_variant=args.network)
-    shutil.rmtree('./tmp.model', ignore_errors=True)
+    graph = model_constructor(checkpoint='./tmp', data_name=args.data, model_variant=args.network)
+    shutil.rmtree('./tmp', ignore_errors=True)

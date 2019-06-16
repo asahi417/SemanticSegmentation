@@ -10,7 +10,7 @@ from ..util import WORK_DIR, create_log
 
 DATA = 'data/pascal'
 NUM_CLASS = 21
-IGNORE_VALUE = 0
+IGNORE_VALUE = 255
 
 BASE_URL = "http://host.robots.ox.ac.uk/pascal/VOC/voc2012"
 FILENAME = "VOCtrainval_11-May-2012.tar"
