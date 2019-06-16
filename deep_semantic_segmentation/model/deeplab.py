@@ -187,10 +187,8 @@ class DeepLab:
             def get_summary(__name):
                 logging_image_number = 5
                 vis_label = util_tf.coloring_segmentation(self.__segmentation,
-                                                          self.__iterator.num_class,
                                                           [self.__iterator.crop_height, self.__iterator.crop_width])
                 vis_pred = util_tf.coloring_segmentation(self.__prediction,
-                                                         self.__iterator.num_class,
                                                          [self.__iterator.crop_height, self.__iterator.crop_width])
                 __summary_img = tf.summary.merge([
                     tf.summary.image('%s_image' % __name, tf.cast(self.__image, tf.uint8), logging_image_number),
