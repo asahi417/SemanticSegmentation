@@ -243,7 +243,6 @@ class DeepLab:
         )
 
         logit_flatten = tf.reshape(logit, shape=[-1, self.__iterator.num_class])
-        logit_flatten = logit_flatten*tf.cast(not_ignore_mask, tf.float32)
         # pixel-wise cross entropy
         if self.__option('top_k_percent_pixels') == 1.0:
             loss = tf.losses.softmax_cross_entropy(
