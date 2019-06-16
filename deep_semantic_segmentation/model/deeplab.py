@@ -154,18 +154,20 @@ class DeepLab:
             # - update_op has to be updated every training step
             # - metric consists of the value averaging over the past results stored by update_op
             scope = 'evaluation_metrics'
+
             predictions = tf.cast(tf.reshape(self.__prediction, shape=[-1]), tf.int64)
             labels = tf.cast(tf.reshape(self.__segmentation, shape=[-1]), tf.int64)
-            not_ignore_mask = tf.cast(
-                tf.not_equal(labels, self.__iterator.segmentation_ignore_value),
-                tf.float32)
-            predictions = predictions * not_ignore_mask
-            labels = labels * not_ignore_mask
+
+            not_ignore_mask = tf.not_equal(labels, self.__iterator.segmentation_ignore_value)
+
+            predictions = predictions * tf.cast(not_ignore_mask, tf.int64)
+            labels = labels * tf.cast(not_ignore_mask, tf.int64)
+
             # mean IoU (intersection over union)
             self.__miou, update_op_miou = tf.metrics.mean_iou(
                 predictions=predictions,
                 labels=labels,
-                weights=not_ignore_mask,
+                weights=tf.cast(not_ignore_mask, tf.float32),
                 name=scope,
                 num_classes=self.__iterator.num_class)
             # pixel accuracy
@@ -230,24 +232,24 @@ class DeepLab:
                              logit,
                              segmentation):
         assert logit.get_shape().as_list()[1:2] == segmentation.get_shape().as_list()[1:2]
-        segmentation = tf.cast(segmentation, tf.int32)
+        segmentation = tf.cast(segmentation, tf.int64)
         segmentation = tf.stop_gradient(segmentation)
         segmentation_flatten = tf.reshape(segmentation, shape=[-1])
-        not_ignore_mask = tf.cast(
-            tf.not_equal(segmentation_flatten, self.__iterator.segmentation_ignore_value),
-            tf.float32
-        )
+        not_ignore_mask = tf.not_equal(segmentation_flatten, self.__iterator.segmentation_ignore_value)
+
+        segmentation_flatten = segmentation_flatten * tf.cast(not_ignore_mask, tf.int64)
         segmentation_flatten_one_hot = tf.one_hot(
-            segmentation_flatten*not_ignore_mask, self.__iterator.num_class, on_value=1.0, off_value=0.0
+            segmentation_flatten, self.__iterator.num_class, on_value=1.0, off_value=0.0
         )
+
         logit_flatten = tf.reshape(logit, shape=[-1, self.__iterator.num_class])
-        logit_flatten = logit_flatten*not_ignore_mask
+        logit_flatten = logit_flatten*tf.cast(not_ignore_mask, tf.float32)
         # pixel-wise cross entropy
         if self.__option('top_k_percent_pixels') == 1.0:
             loss = tf.losses.softmax_cross_entropy(
                 segmentation_flatten_one_hot,
                 logit_flatten,
-                weights=not_ignore_mask)
+                weights=tf.cast(not_ignore_mask, tf.float32))
             return loss
         else:
             # batch size
