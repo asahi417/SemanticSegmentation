@@ -196,7 +196,7 @@ class DeepLab:
         n_var = 0
         for var in trainable_variables:
             sh = var.get_shape().as_list()
-            if LOG_VAR is not None:
+            if LOG_VAR is None:
                 self.__logger.info('%s: %s' % (var.name, str(sh)))
             n_var += np.prod(sh)
         self.__logger.info('total variables: %i' % n_var)
