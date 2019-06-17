@@ -5,7 +5,7 @@ class Parameter:
     """ Deep Lab v3 (plus) """
 
     # optimization
-    base_learning_rate = 0.00001
+    base_learning_rate = 0.001
     decay_method = 'poly'
 
     # In order to fine tune the BN layers, one needs to use large batch size (> 12), and set
