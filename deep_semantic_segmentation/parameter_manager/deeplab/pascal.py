@@ -29,6 +29,9 @@ class Parameter:
     # atrous_rates = [6, 12, 18] (output stride 16) and decoder_output_stride = 4.output_stride = 16
     output_stride = 16
     atrous_rates = [6, 12, 18]
+    # output_stride = 8
+    # atrous_rates = [12, 24, 36]
+
     # if decoder_output_stride is None, no decoder
     decoder_output_stride = 4
 

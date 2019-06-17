@@ -11,6 +11,7 @@ from ..util import create_log, load_finetune_model
 
 slim = tf.contrib.slim
 
+LOG_VAR = os.getenv('LOG_LEVEL', None)
 
 class DeepLab:
 
@@ -92,7 +93,7 @@ class DeepLab:
         self.__logger.info(' * feature shape: %s' % feature.shape)
 
         # aspp feature: (batch, crop_size/output_stride, crop_size/output_stride, 2048)
-        aspp_feature = self.__aspp(feature, is_training=self.__is_training)
+        aspp_feature = self.__aspp(feature, is_training=self.__is_training, )
         self.__logger.info(' * aspp feature shape: %s' % aspp_feature.shape)
 
         # decoder
@@ -104,13 +105,13 @@ class DeepLab:
         else:
             final_logit = aspp_feature
 
-        # multi-scale class-wise logit
+        # class-wise logit
         logit = self.__class_logit(final_logit)
         self.__logger.info(' * logit shape: %s' % logit.shape)
 
         # up-sample logit to be same as segmentation map
         logit = util_tf.resize_bilinear(logit, [self.__iterator.crop_height, self.__iterator.crop_width])
-        self.__logger.info(' * reshaped logit shape: %s' % logit.shape)
+        self.__logger.info(' * bilinear-resized logit shape: %s' % logit.shape)
         self.__prob = tf.nn.softmax(logit)
         self.__logger.info(' * prob shape: %s' % self.__prob.shape)
         self.__prediction = tf.cast(tf.expand_dims(tf.argmax(self.__prob, axis=-1), axis=-1), tf.int64)
@@ -195,7 +196,8 @@ class DeepLab:
         n_var = 0
         for var in trainable_variables:
             sh = var.get_shape().as_list()
-            self.__logger.info('%s: %s' % (var.name, str(sh)))
+            if LOG_VAR is not None:
+                self.__logger.info('%s: %s' % (var.name, str(sh)))
             n_var += np.prod(sh)
         self.__logger.info('total variables: %i' % n_var)
 
@@ -290,32 +292,23 @@ class DeepLab:
     def __class_logit(self,
                       feature,
                       reuse: bool=False):
-        """ Logit for prediction.
-        The underlying model is branched out in the last layer when atrous
-        spatial pyramid pooling is employed, and all branches are sum-merged
-        to form the final logits.
-        """
+        """ Final logit with class-label size """
 
         with slim.arg_scope(
                 [slim.conv2d],
-                weights_regularizer=slim.l2_regularizer(self.__option('weight_decay')),
+                # weights_regularizer=slim.l2_regularizer(self.__option('weight_decay')),
                 weights_initializer=tf.truncated_normal_initializer(stddev=0.01),
                 reuse=reuse):
             with tf.variable_scope('logits'):
-                branch_logits = []
-                for i, rate in enumerate(self.__option('atrous_rates')):
-                    branch_logits.append(
-                        slim.conv2d(
-                            feature,
-                            num_outputs=self.__iterator.num_class,
-                            kernel_size=1,
-                            rate=rate,
-                            activation_fn=None,
-                            normalizer_fn=None,
-                            scope='conv_%i' % i))
-
-                logit_sum = tf.add_n(branch_logits)
-        return logit_sum
+                final_logit = slim.conv2d(
+                    feature,
+                    num_outputs=self.__iterator.num_class,
+                    kernel_size=1,
+                    rate=1,
+                    activation_fn=None,
+                    normalizer_fn=None,
+                    scope='conv')
+        return final_logit
 
     def __decoder(self,
                   feature,
@@ -333,10 +326,11 @@ class DeepLab:
 
          Return
         ----------------
+        decoded feature map
         """
 
         scopes = dict(
-            weights_regularizer=slim.l2_regularizer(self.__option('weight_decay')),
+            # weights_regularizer=slim.l2_regularizer(self.__option('weight_decay')),
             activation_fn=tf.nn.relu6 if self.__option('use_bounded_activation') else tf.nn.relu,
             padding='SAME',
             stride=1,
@@ -418,7 +412,7 @@ class DeepLab:
         """
 
         scopes = dict(
-            weights_regularizer=slim.l2_regularizer(self.__option('weight_decay')),
+            # weights_regularizer=slim.l2_regularizer(self.__option('weight_decay')),
             activation_fn=tf.nn.relu6 if self.__option('use_bounded_activation') else tf.nn.relu,
             padding='SAME',
             stride=1,
@@ -448,10 +442,12 @@ class DeepLab:
                 with tf.variable_scope('global_average_pooling'):
                     global_average_pooling = tf.reduce_mean(feature, axis=[1, 2], keepdims=True)
                     image_pooling = slim.conv2d(global_average_pooling, num_outputs=self.__option('depth'), kernel_size=1)
+                    self.__logger.info(' * aspp GAP: %s' % image_pooling.shape)
                     image_pooling_resize = util_tf.resize_bilinear(
                         image_pooling,
                         [height, width],
                         feature.dtype)
+                    self.__logger.info(' * aspp GAP resized: %s' % image_pooling_resize.shape)
                 logits.append(image_pooling_resize)
 
                 # ASPP feature: 1x1 convolution for point-wise feature
@@ -474,12 +470,17 @@ class DeepLab:
                                 kernel_size=3,
                                 rate=rate,
                                 scope='aspp_%i' % i)
+                        self.__logger.info(' * aspp %i: %s' % (i, aspp_features.shape))
                         logits.append(aspp_features)
 
                 # Merge branch logits
                 concat_logits = tf.concat(logits, axis=3)
+                self.__logger.info(' * aspp concat: %s' % concat_logits.shape)
                 concat_logits = slim.conv2d(
-                    concat_logits, num_outputs=self.__option('depth'), kernel_size=1, scope='concat_projection')
+                    concat_logits,
+                    num_outputs=self.__option('depth'),
+                    kernel_size=1,
+                    scope='concat_projection')
                 concat_logits = slim.dropout(
                     concat_logits,
                     keep_prob=0.9,
