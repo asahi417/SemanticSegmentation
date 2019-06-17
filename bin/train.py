@@ -38,11 +38,11 @@ if __name__ == '__main__':
     if args.off_decoder:
         parameters['decoder_output_stride'] = None
     if args.output_stride:
-        if args.output_stride == 4:
-            parameters['output_stride'] = 4
+        if args.output_stride == 8:
+            parameters['output_stride'] = 8
             parameters['atrous_rate'] = [12, 24, 36]
         elif args.output_stride == 16:
-            parameters['output_stride'] = 4
+            parameters['output_stride'] = 16
             parameters['atrous_rate'] = [6, 12, 18]
 
     model_constructor = MODELS[args.model]
