@@ -52,6 +52,14 @@ MODEL_CONFIG = {
             'name': 'xception_65',
             'preprocess': xception.preprocess_zero_mean_unit_range,
             'decoder_end_points': {4: ['xception_65/entry_flow/block2/unit_1/xception_module/separable_conv2_pointwise']}
+        },
+    'xception_41':
+        {
+            'arg_scope': xception.xception_arg_scope,
+            'network': xception.xception_41,
+            'name': 'xception_41',
+            'preprocess': xception.preprocess_zero_mean_unit_range,
+            'decoder_end_points': {4: ['xception_41/entry_flow/block2/unit_1/xception_module/separable_conv2_pointwise']}
         }
 }
 
