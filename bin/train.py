@@ -22,7 +22,7 @@ def get_options():
     parser.add_argument('--output_stride', help='output_stride', default=None, type=int, **share_param)
     parser.add_argument('--batch_norm_decoder', help='batch_norm_decoder', action='store_true')
     parser.add_argument('--batch_norm_aspp', help='unuse decoder', action='store_true')
-    parser.add_argument('--backbone', help='Backbone', default='xception_65_coco', type=str, **share_param)
+    parser.add_argument('--backbone', help='Backbone', default=None, type=str, **share_param)
     return parser.parse_args()
 
 
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     if args.batch_norm_aspp:
         parameters['batch_norm_aspp'] = True
     if args.backbone:
-        parameters['model_variant'] = backbone
+        parameters['model_variant'] = args.backbone
 
 
     model_constructor = MODELS[args.model]
