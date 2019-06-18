@@ -20,6 +20,8 @@ def get_options():
     parser.add_argument('-w', '--weight_decay', help='weight decay', default=None, type=float, **share_param)
     parser.add_argument('--off_decoder', help='unuse decoder', action='store_true')
     parser.add_argument('--output_stride', help='output_stride', default=None, type=int, **share_param)
+    parser.add_argument('--batch_norm_decoder', help='batch_norm_decoder', action='store_true')
+    parser.add_argument('--batch_norm_aspp', help='unuse decoder', action='store_true')
     return parser.parse_args()
 
 
@@ -44,6 +46,11 @@ if __name__ == '__main__':
         elif args.output_stride == 16:
             parameters['output_stride'] = 16
             parameters['atrous_rate'] = [6, 12, 18]
+    if args.batch_norm_decoder:
+        parameters['batch_norm_decoder'] = True
+    if args.batch_norm_aspp:
+        parameters['batch_norm_aspp'] = True
+
 
     model_constructor = MODELS[args.model]
     model = model_constructor(data_name=args.data, **parameters)
