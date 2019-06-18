@@ -179,7 +179,7 @@ class DeepLab:
                 __summary = tf.summary.merge([
                     tf.summary.scalar('%s_pixel_accuracy' % __name, self.__pixel_accuracy),
                     tf.summary.scalar('%s_miou' % __name, self.__miou),
-                    tf.summary.scalar('%s_loss' % __name, self.__loss),
+                    # tf.summary.scalar('%s_loss' % __name, self.__loss),
                 ])
                 return __summary, __summary_img
 
