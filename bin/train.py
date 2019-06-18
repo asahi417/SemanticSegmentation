@@ -51,6 +51,8 @@ if __name__ == '__main__':
         parameters['batch_norm_decoder'] = True
     if args.batch_norm_aspp:
         parameters['batch_norm_aspp'] = True
+    if args.backbone:
+        parameters['model_variant'] = backbone
 
 
     model_constructor = MODELS[args.model]
