@@ -53,15 +53,11 @@ class Parameter:
     use_bounded_activation = False
 
     aspp_with_separable_conv = True
-    # aspp_batch_norm = True
-    aspp_batch_norm = False
+    aspp_batch_norm = True
 
     decoder_with_separable_conv = True
-    # decoder_batch_norm = True
-    decoder_batch_norm = False
+    decoder_batch_norm = True
 
-    # # if True, upsample logit, else downsample segmentation map
-    # upsample_logits = True
 
     # The training step in which exact hard example mining kicks off. Note we
     # gradually reduce the mining percent to the specified

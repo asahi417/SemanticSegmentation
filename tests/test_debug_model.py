@@ -20,15 +20,24 @@ def get_options():
     parser.add_argument('-b', '--batch_size', help='Batch size', default=None, type=int, **share_param)
     parser.add_argument('-l', '--learning_rate', help='learning rate', default=None, type=float, **share_param)
     parser.add_argument('-w', '--weight_decay', help='weight decay', default=None, type=float, **share_param)
+    parser.add_argument('--crop_size', help='crop size', default=None, type=int, **share_param)
     parser.add_argument('--off_decoder', help='unuse decoder', action='store_true')
     parser.add_argument('--output_stride', help='output_stride', default=None, type=int, **share_param)
+    parser.add_argument('--decoder_batch_norm', help='decoder_batch_norm', action='store_true')
+    parser.add_argument('--aspp_batch_norm', help='aspp_batch_norm', action='store_true')
+    parser.add_argument('--backbone', help='Backbone', default=None, type=str, **share_param)
     return parser.parse_args()
 
 
 if __name__ == '__main__':
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
     args = get_options()
 
+
     parameters = dict()
+    if args.crop_size:
+        parameters['crop_height'] = args.crop_size
+        parameters['crop_width'] = args.crop_size
     if args.batch_size:
         parameters['batch_size'] = args.batch_size
     if args.weight_decay:
@@ -44,7 +53,14 @@ if __name__ == '__main__':
         elif args.output_stride == 16:
             parameters['output_stride'] = 16
             parameters['atrous_rate'] = [6, 12, 18]
+    if args.decoder_batch_norm:
+        parameters['decoder_batch_norm'] = True
+    if args.aspp_batch_norm:
+            parameters['aspp_batch_norm'] = True
+    if args.backbone:
+        parameters['model_variant'] = args.backbone
+
 
     model_constructor = MODELS[args.model]
-    graph = model_constructor(checkpoint='./tmp', data_name=args.data, **parameters)
+    model_constructor(checkpoint='./tmp', data_name=args.data, **parameters)
     shutil.rmtree('./tmp', ignore_errors=True)

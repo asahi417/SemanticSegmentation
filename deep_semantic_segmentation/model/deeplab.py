@@ -176,7 +176,9 @@ class DeepLab:
                                      logging_image_number)])
                 __summary = tf.summary.merge([
                     tf.summary.scalar('%s_pixel_accuracy' % __name, self.__pixel_accuracy),
-                    tf.summary.scalar('%s_miou' % __name, self.__miou)])
+                    tf.summary.scalar('%s_miou' % __name, self.__miou),
+                    tf.summary.scalar('%s_loss' % __name, self.__loss),
+                ])
                 return __summary, __summary_img
 
             self.__summary_train, self.__summary_img_train = get_summary('train')
@@ -196,7 +198,7 @@ class DeepLab:
         n_var = 0
         for var in trainable_variables:
             sh = var.get_shape().as_list()
-            if LOG_VAR is None:
+            if LOG_VAR is not None:
                 self.__logger.info('%s: %s' % (var.name, str(sh)))
             n_var += np.prod(sh)
         self.__logger.info('total variables: %i' % n_var)
@@ -252,6 +254,7 @@ class DeepLab:
         )
 
         logit_flatten = tf.reshape(logit, shape=[-1, self.__iterator.num_class])
+        logit_flatten = logit_flatten * tf.cast(not_ignore_mask, tf.float32)
         # pixel-wise cross entropy
         if self.__option('top_k_percent_pixels') == 1.0:
             loss = tf.losses.softmax_cross_entropy(
@@ -292,7 +295,7 @@ class DeepLab:
     def __class_logit(self,
                       feature,
                       reuse: bool=False):
-        """ Final logit with class-label size """
+        """ Final logit with class-lab """
 
         with slim.arg_scope(
                 [slim.conv2d],
@@ -512,9 +515,10 @@ class DeepLab:
                 logger.info('  - initialization')
                 self.__session.run([self.__init_op_iterator, self.__init_op_metric], feed_dict=feed_dict)
 
-                # this process takes about 5 min, so skip when training
-                # logger.info('  - writing images to tensorboard')
-                # self.__writer.add_summary(self.__session.run(self.__summary_img_train, feed_dict=feed_dict))
+                # this process takes about 5 min
+                logger.info('  - writing images to tensorboard')
+                self.__writer.add_summary(
+                    self.__session.run(self.__summary_img_train, feed_dict=feed_dict), global_step=step)
 
                 logger.info('  - training start')
                 print()
@@ -545,7 +549,8 @@ class DeepLab:
                 logger.info('  - initialization')
                 self.__session.run([self.__init_op_iterator, self.__init_op_metric], feed_dict=feed_dict)
                 logger.info('  - writing images to tensorboard')
-                self.__writer.add_summary(self.__session.run(self.__summary_img_valid, feed_dict=feed_dict))
+                self.__writer.add_summary(
+                    self.__session.run(self.__summary_img_valid, feed_dict=feed_dict), global_step=step)
                 logger.info('  - validation start')
                 while True:
                     try:

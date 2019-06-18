@@ -18,10 +18,11 @@ def get_options():
     parser.add_argument('-b', '--batch_size', help='Batch size', default=None, type=int, **share_param)
     parser.add_argument('-l', '--learning_rate', help='learning rate', default=None, type=float, **share_param)
     parser.add_argument('-w', '--weight_decay', help='weight decay', default=None, type=float, **share_param)
-    parser.add_argument('--off_decoder', help='unuse decoder', action='store_true')
+    parser.add_argument('--crop_size', help='crop size', default=None, type=int, **share_param)
     parser.add_argument('--output_stride', help='output_stride', default=None, type=int, **share_param)
-    parser.add_argument('--batch_norm_decoder', help='batch_norm_decoder', action='store_true')
-    parser.add_argument('--batch_norm_aspp', help='unuse decoder', action='store_true')
+    parser.add_argument('--off_decoder', help='unuse decoder', action='store_true')
+    parser.add_argument('--off_decoder_batch_norm', help='decoder_batch_norm', action='store_true')
+    parser.add_argument('--off_aspp_batch_norm', help='aspp_batch_norm', action='store_true')
     parser.add_argument('--backbone', help='Backbone', default=None, type=str, **share_param)
     return parser.parse_args()
 
@@ -32,6 +33,9 @@ if __name__ == '__main__':
 
 
     parameters = dict()
+    if args.crop_size:
+        parameters['crop_height'] = args.crop_size
+        parameters['crop_width'] = args.crop_size
     if args.batch_size:
         parameters['batch_size'] = args.batch_size
     if args.weight_decay:
@@ -47,10 +51,10 @@ if __name__ == '__main__':
         elif args.output_stride == 16:
             parameters['output_stride'] = 16
             parameters['atrous_rate'] = [6, 12, 18]
-    if args.batch_norm_decoder:
-        parameters['decoder_batch_norm'] = True
-    if args.batch_norm_aspp:
-        parameters['aspp_batch_norm'] = True
+    if args.off_decoder_batch_norm:
+        parameters['decoder_batch_norm'] = False
+    if args.off_aspp_batch_norm:
+            parameters['aspp_batch_norm'] = False
     if args.backbone:
         parameters['model_variant'] = args.backbone
 
