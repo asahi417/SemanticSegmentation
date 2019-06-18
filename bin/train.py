@@ -22,6 +22,7 @@ def get_options():
     parser.add_argument('--output_stride', help='output_stride', default=None, type=int, **share_param)
     parser.add_argument('--batch_norm_decoder', help='batch_norm_decoder', action='store_true')
     parser.add_argument('--batch_norm_aspp', help='unuse decoder', action='store_true')
+    parser.add_argument('--backbone', help='Backbone', default='xception_65_coco', type=str, **share_param)
     return parser.parse_args()
 
 
