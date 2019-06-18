@@ -12,6 +12,7 @@ from ..util import create_log, load_finetune_model
 slim = tf.contrib.slim
 
 LOG_VAR = os.getenv('LOG_LEVEL', None)
+LOG_IMAGE_NUM = os.getenv('LOG_IMAGE_NUM', 3)
 
 class DeepLab:
 
@@ -161,7 +162,6 @@ class DeepLab:
             ])
 
             def get_summary(__name):
-                logging_image_number = 1
                 vis_label = util_tf.coloring_segmentation(self.__segmentation,
                                                           [self.__iterator.crop_height, self.__iterator.crop_width])
                 vis_pred = util_tf.coloring_segmentation(self.__prediction,
@@ -169,13 +169,13 @@ class DeepLab:
                 __summary_img = tf.summary.merge([
                     tf.summary.image('%s_image' % __name,
                                      tf.cast(self.__image, tf.uint8),
-                                     logging_image_number),
+                                     LOG_IMAGE_NUM),
                     tf.summary.image('%s_segmentation_predict' % __name,
                                      vis_pred,
-                                     logging_image_number),
+                                     LOG_IMAGE_NUM),
                     tf.summary.image('%s_segmentation_truth' % __name,
                                      vis_label,
-                                     logging_image_number)])
+                                     LOG_IMAGE_NUM)])
                 __summary = tf.summary.merge([
                     tf.summary.scalar('%s_pixel_accuracy' % __name, self.__pixel_accuracy),
                     tf.summary.scalar('%s_miou' % __name, self.__miou),
@@ -200,7 +200,7 @@ class DeepLab:
         n_var = 0
         for var in trainable_variables:
             sh = var.get_shape().as_list()
-            if LOG_VAR is not None:
+            if LOG_VAR is None:
                 self.__logger.info('%s: %s' % (var.name, str(sh)))
             n_var += np.prod(sh)
         self.__logger.info('total variables: %i' % n_var)
