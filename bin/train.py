@@ -48,9 +48,9 @@ if __name__ == '__main__':
             parameters['output_stride'] = 16
             parameters['atrous_rate'] = [6, 12, 18]
     if args.batch_norm_decoder:
-        parameters['batch_norm_decoder'] = True
+        parameters['decoder_batch_norm'] = True
     if args.batch_norm_aspp:
-        parameters['batch_norm_aspp'] = True
+        parameters['aspp_batch_norm'] = True
     if args.backbone:
         parameters['model_variant'] = args.backbone
 
