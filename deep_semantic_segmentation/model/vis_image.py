@@ -52,9 +52,9 @@ class VisImage:
         self.filename = data[self.__iterator.flag['filename']]
 
     def get_image(self):
-        image, seg, filename = self.__session.run([self.image, self.segmentation_color, self.filename])
+        image, seg, filename, seg_raw = self.__session.run([self.image, self.segmentation_color, self.filename, self.segmentation])
         filename = [byte.decode() for byte in filename]
-        return image, seg, filename
+        return image, seg, filename, seg_raw
 
     def setup(self, is_training: bool):
         self.__session.run(self.initializer, feed_dict={self.is_training: is_training})
@@ -64,13 +64,17 @@ class VisImage:
             output_dir = os.path.join(TFRECORDS, self.__option('data_name'), 'examples')
         if not os.path.exists(output_dir):
             os.makedirs(output_dir, exist_ok=True)
-        images, segs, filenames = self.get_image()
+        images, segs, filenames, seg_raws = self.get_image()
         for i in range(len(filenames)):
-            image, seg, filename = images[i], segs[i], filenames[i]
+            image, seg, filename, seg_raw = images[i], segs[i], filenames[i], seg_raws[i]
 
             print('image shape       :', image.shape)
-            print('segmentation shape:', seg.shape, np.unique(seg))
+            print('segmentation shape:', seg.shape)
             print('filenames         :', filename)
+            print('segmentation stats:')
+            uni, cnt = np.unique(seg_raw, return_counts=True)
+            print(' unique:', uni)
+            print(' count :', cnt)
 
             base_name = str(filename).split('/')[-1].replace('.jpg', '.png')
             for array, name in zip([image, seg], ['image', 'seg']):

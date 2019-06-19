@@ -58,7 +58,6 @@ class DeepLab:
             # load model
             self.__logger.info('load variable from %s' % self.__checkpoint)
             self.__saver.restore(self.__session, '%s/model.ckpt' % self.__option.checkpoint_dir)
-            self.__warm_start = True
         else:
             self.__session.run(tf.global_variables_initializer())
             if os.path.exists('%s.index' % self.__checkpoint_finetune):
@@ -67,7 +66,6 @@ class DeepLab:
                 self.__saver_backbone.restore(self.__session, self.__checkpoint_finetune)
             else:
                 raise ValueError('backbone network is not found')
-            self.__warm_start = False
 
     def __build_graph(self):
         #########
@@ -246,23 +244,32 @@ class DeepLab:
                              segmentation):
         assert logit.get_shape().as_list()[1:2] == segmentation.get_shape().as_list()[1:2]
         segmentation = tf.cast(segmentation, tf.int64)
-        segmentation = tf.stop_gradient(segmentation)
-        segmentation_flatten = tf.reshape(segmentation, shape=[-1])
-        not_ignore_mask = tf.not_equal(segmentation_flatten, self.__iterator.segmentation_ignore_value)
 
-        segmentation_flatten = segmentation_flatten * tf.cast(not_ignore_mask, tf.int64)
+        mask_token = tf.convert_to_tensor(self.__iterator.segmentation_ignore_value, dtype=tf.int64)
+        not_ignore_mask = tf.not_equal(segmentation, mask_token)
+
+        segmentation = tf.stop_gradient(segmentation * tf.cast(not_ignore_mask, tf.int64))
+        segmentation_flatten = tf.reshape(segmentation, shape=[-1])
         segmentation_flatten_one_hot = tf.one_hot(
             segmentation_flatten, self.__iterator.num_class, on_value=1.0, off_value=0.0
         )
 
+        # not_ignore_mask = tf.not_equal(segmentation_flatten, self.__iterator.segmentation_ignore_value)
+        # segmentation_flatten = segmentation_flatten * tf.cast(not_ignore_mask, tf.int64)
+        # segmentation_flatten_one_hot = tf.one_hot(
+        #     segmentation_flatten, self.__iterator.num_class, on_value=1.0, off_value=0.0
+        # )
+
+        logit = logit * tf.cast(not_ignore_mask, tf.float32)
         logit_flatten = tf.reshape(logit, shape=[-1, self.__iterator.num_class])
-        # logit_flatten = logit_flatten * tf.cast(not_ignore_mask, tf.float32)
+
+
         # pixel-wise cross entropy
         if self.__option('top_k_percent_pixels') == 1.0:
             loss = tf.losses.softmax_cross_entropy(
                 segmentation_flatten_one_hot,
-                logit_flatten,
-                weights=tf.cast(not_ignore_mask, tf.float32))
+                logit_flatten)
+                # weights=tf.cast(not_ignore_mask, tf.float32))
             return loss
         else:
             # batch size
