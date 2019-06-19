@@ -92,7 +92,7 @@ class DeepLab:
         self.__logger.info(' * feature shape: %s' % feature.shape)
 
         # aspp feature: (batch, crop_size/output_stride, crop_size/output_stride, 2048)
-        aspp_feature = self.__aspp(feature, is_training=self.__is_training, )
+        aspp_feature = self.__aspp(feature, is_training=self.__is_training)
         self.__logger.info(' * aspp feature shape: %s' % aspp_feature.shape)
 
         # decoder
