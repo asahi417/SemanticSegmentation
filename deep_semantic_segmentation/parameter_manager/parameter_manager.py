@@ -22,8 +22,8 @@ DEFAULT_PARAMETERS = dict(
 class ParameterManager:
 
     def __init__(self,
-                 model_name: str,
-                 data_name: str,
+                 model_name: str = None,
+                 data_name: str = None,
                  checkpoint_version: str=None,
                  checkpoint_dir: str=None,
                  debug: bool = False,
@@ -31,11 +31,13 @@ class ParameterManager:
 
         if checkpoint_dir is None:
             checkpoint_dir = os.path.join(CHECKPOINTS, 'model', model_name)
-        self.default_dict = DEFAULT_PARAMETERS[model_name][data_name]
 
         if checkpoint_version is None:
+            if model_name is None or data_name is None:
+                raise ValueError('model_name and data_name should not be None.')
+            default_dict = DEFAULT_PARAMETERS[model_name][data_name]
             parameter = dict()
-            for k, v in self.default_dict.items():
+            for k, v in default_dict.items():
                 if k in kwargs.keys():
                     parameter[k] = kwargs[k]
                 else:

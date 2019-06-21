@@ -17,7 +17,7 @@ LOG_IMAGE_NUM = os.getenv('LOG_IMAGE_NUM', 3)
 class DeepLab:
 
     def __init__(self,
-                 data_name: str,
+                 data_name: str=None,
                  checkpoint: str = None,
                  checkpoint_version: str = None,
                  **kwargs):
