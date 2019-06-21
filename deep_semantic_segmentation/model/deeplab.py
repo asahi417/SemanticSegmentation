@@ -19,7 +19,7 @@ class DeepLab:
     def __init__(self,
                  data_name: str,
                  checkpoint: str = None,
-                 checkpoint_version: int = None,
+                 checkpoint_version: str = None,
                  **kwargs):
         self.__logger = create_log()
         self.__logger.info(__doc__)
