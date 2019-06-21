@@ -18,6 +18,7 @@ def get_options():
     parser.add_argument('-b', '--batch_size', help='Batch size', default=None, type=int, **share_param)
     parser.add_argument('-l', '--learning_rate', help='learning rate', default=None, type=float, **share_param)
     parser.add_argument('-w', '--weight_decay', help='weight decay', default=None, type=float, **share_param)
+    parser.add_argument('--aspp_depth', help='aspp depth', default=None, type=int, **share_param)
     parser.add_argument('--crop_size', help='crop size', default=None, type=int, **share_param)
     parser.add_argument('--output_stride', help='output_stride', default=None, type=int, **share_param)
     parser.add_argument('--off_decoder', help='unuse decoder', action='store_true')
@@ -62,6 +63,8 @@ if __name__ == '__main__':
                 parameters['aspp_batch_norm'] = False
         if args.backbone:
             parameters['model_variant'] = args.backbone
+        if args.aspp_depth:
+            parameters['depth'] = args.aspp_depth
 
         model = model_constructor(**parameters)
 
