@@ -12,7 +12,7 @@ class Parameter:
     # fine_tune_batch_norm = True. If the users have limited GPU memory at hand, please fine-tune
     # from provided checkpoints whose batch norm parameters have been trained, and use smaller
     # learning rate with fine_tune_batch_norm = False.
-    fine_tune_batch_norm = False
+    fine_tune_batch_norm = True
 
     training_number_of_steps = 30000
     batch_size = 4

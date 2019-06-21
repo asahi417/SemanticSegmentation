@@ -119,8 +119,10 @@ class DeepImageFeature:
         reuse: bool
         """
 
-        finetune_batch_norm = tf.convert_to_tensor(self.__finetune_batch_norm, dtype=tf.bool)
-        is_batch_norm = tf.math.logical_and(is_training, finetune_batch_norm)
+        if self.__finetune_batch_norm:
+            is_batch_norm = is_training
+        else:
+            is_batch_norm = False
 
         with slim.arg_scope(self.__arg_scope):
             feature, endpoint = self.__network(
