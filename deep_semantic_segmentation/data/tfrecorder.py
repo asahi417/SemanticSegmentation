@@ -106,15 +106,18 @@ class TFRecord:
     def tfrecord_dir(self):
         return self.__tfrecord_path
 
-    def get_iterator(self, is_training):
+    def get_iterator(self, is_training_data, is_training_setting):
         """ get `tf.data.Iterator` and iterator initializer """
         assert self.crop_height is not None
         assert self.crop_width is not None
+        # is_training_setting = is_training if is_training_setting is None else is_training_setting
+        # if is_training_setting != is_training:
+        #     print('*** setting training and setting in different ***')
         tfrecord_path = tf.cond(
-            is_training,
+            is_training_data,
             lambda: os.path.join(self.__tfrecord_path, 'training.tfrecord'),
             lambda: os.path.join(self.__tfrecord_path, 'validation.tfrecord'))
-        preprocessing_function = self.image_preprocessing(is_training)
+        preprocessing_function = self.image_preprocessing(is_training_setting)
         data_set_api = tf.data.TFRecordDataset(tfrecord_path)
         data_set_api = data_set_api.map(self.parse_tfrecord).map(preprocessing_function)
         data_set_api = data_set_api.shuffle(buffer_size=100)
@@ -207,8 +210,6 @@ class TFRecord:
                     lambda: __label_aug,
                     lambda: __label)
 
-                # __image_return = tf.where(is_training, __image_aug, __image)
-                # __label_return = tf.where(is_training, __label_aug, __label)
                 return __image_return, __label_return
 
             def __augment_crop(__image, __label):

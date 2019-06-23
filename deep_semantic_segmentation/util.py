@@ -59,7 +59,7 @@ def load_finetune_model(model_variant):
     return path
 
 
-def create_log(out_file_path=None):
+def create_log(out_file_path=None, reuse=False):
     """ Logging
         If `out_file_path` is None, only show in terminal
         or else save log file in `out_file_path`
@@ -72,7 +72,8 @@ def create_log(out_file_path=None):
     # handler to record log to a log file
     if out_file_path is not None:
         if os.path.exists(out_file_path):
-            os.remove(out_file_path)
+            if not reuse:
+                os.remove(out_file_path)
         logger = logging.getLogger(out_file_path)
 
         if len(logger.handlers) > 1:  # if there are already handler, return it

@@ -71,10 +71,14 @@ class DeepLab:
         #########
         # graph #
         #########
+        # if use training setting: batch norm, dropout, ...
         self.__is_training = tf.placeholder_with_default(True, [], name='is_training')
+        # if use training data
+        self.__is_training_data = tf.placeholder_with_default(True, [], name='is_training_data')
 
         # setup TFRecord iterator and get image/segmentation map
-        iterator, self.__init_op_iterator = self.__iterator.get_iterator(is_training=self.__is_training)
+        iterator, self.__init_op_iterator = self.__iterator.get_iterator(
+            is_training_data=self.__is_training_data, is_training_setting=self.__is_training)
         data = iterator.get_next()
         image = data[self.__iterator.flag['image']]
         segmentation = data[self.__iterator.flag['segmentation']]
@@ -520,7 +524,7 @@ class DeepLab:
                 # TRAINING #
                 ############
                 logger.info(' * training')
-                feed_dict = {self.__is_training: True}
+                feed_dict = {self.__is_training: True, self.__is_training_data: True}
                 logger.info('  - initialization')
                 self.__session.run([self.__init_op_iterator, self.__init_op_metric], feed_dict=feed_dict)
 
@@ -555,7 +559,7 @@ class DeepLab:
                 # VALID #
                 #########
                 logger.info(' * validation')
-                feed_dict = {self.__is_training: False}
+                feed_dict = {self.__is_training: False, self.__is_training_data: False}
                 logger.info('  - initialization')
                 self.__session.run([self.__init_op_iterator, self.__init_op_metric], feed_dict=feed_dict)
                 logger.info('  - writing images to tensorboard')
@@ -587,3 +591,22 @@ class DeepLab:
         logger.info('Save checkpoints...')
         self.__saver.save(self.__session, os.path.join(self.__option.checkpoint_dir, 'model.ckpt'))
 
+
+    def test(self,
+             is_training_data: bool=False,
+             is_training=False):
+        """ Model validation """
+        feed_dict = {self.__is_training: is_training, self.__is_training_data: is_training_data}
+        logger = create_log(os.path.join(self.__option.checkpoint_dir, 'validation.log'), reuse=True)
+        logger.info(' * validation (is_training: %s, is_training_data: %s)' % (is_training, is_training_data))
+        logger.info('  - initialization')
+        self.__session.run([self.__init_op_iterator, self.__init_op_metric], feed_dict=feed_dict)
+        logger.info('  - validation start')
+        while True:
+            try:
+                self.__session.run(self.__update_op_metric, feed_dict=feed_dict)
+            except tf.errors.OutOfRangeError:
+                pix_acc, miou = self.__session.run([self.__pixel_accuracy, self.__miou])
+                logger.info('  - pixel accuracy: %0.4f' % pix_acc)
+                logger.info('  - mean IoU      : %0.4f' % miou)
+                break
