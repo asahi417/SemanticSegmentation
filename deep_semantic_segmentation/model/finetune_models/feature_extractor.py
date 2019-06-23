@@ -72,10 +72,12 @@ def get_arg_scope(model_variant, arg_scope_instance, **kwargs):
             batch_norm_scale=True)
     elif 'xception' in model_variant:
         return arg_scope_instance(
+            weight_decay=0.0,
             batch_norm_decay=0.9997,
             batch_norm_epsilon=1e-3,
             batch_norm_scale=True,
-            regularize_depthwise=kwargs['regularize_depthwise'],
+            use_batch_norm=kwargs['use_batch_norm'],
+            regularize_depthwise=False,
             use_bounded_activation=kwargs['use_bounded_activation'])
     else:
         raise ValueError('Unknown model variant %s.' % model_variant)
@@ -88,7 +90,8 @@ class DeepImageFeature:
                  output_stride: int=8,
                  multi_grid=None,
                  use_bounded_activation=False,
-                 finetune_batch_norm: bool=False):
+                 # finetune_batch_norm: bool=False,
+                 weight_deacay: float=0.00004):
 
         if model_variant not in MODEL_CONFIG.keys():
             raise ValueError('Unknown model variant %s.' % model_variant)
@@ -96,11 +99,12 @@ class DeepImageFeature:
         model_config = MODEL_CONFIG[model_variant]
         self.__output_stride = output_stride
         self.__multi_grid = multi_grid
-        self.__finetune_batch_norm = finetune_batch_norm
+        # self.__finetune_batch_norm = finetune_batch_norm
         self.__num_classes = None  # this results in final logit dimension, and should be None
         self.__arg_scope = get_arg_scope(model_variant,
                                          model_config['arg_scope'],
-                                         regularize_depthwise=False,
+                                         use_batch_norm=True,
+                                         weight_deacay=weight_deacay,
                                          use_bounded_activation=use_bounded_activation)
         self.__network = model_config['network']
         self.__preprocess = model_config['preprocess']
@@ -110,6 +114,7 @@ class DeepImageFeature:
     def feature(self,
                 images,
                 is_training,
+                is_training_bn,
                 reuse=None):
         """
          Parameter
@@ -119,16 +124,14 @@ class DeepImageFeature:
         reuse: bool
         """
 
-        if self.__finetune_batch_norm:
-            is_batch_norm = is_training
-        else:
-            is_batch_norm = False
-
+        # if self.__finetune_batch_norm:
+        #     is_training_bn = False
         with slim.arg_scope(self.__arg_scope):
             feature, endpoint = self.__network(
                 self.__preprocess(images, tf.float32),
                 num_classes=self.__num_classes,
-                is_training=is_batch_norm,
+                is_training_bn=is_training_bn,
+                is_training=is_training,
                 global_pool=False,
                 output_stride=self.__output_stride,
                 multi_grid=self.__multi_grid,

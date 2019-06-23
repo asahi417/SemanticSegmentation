@@ -43,8 +43,7 @@ class DeepLab:
             model_variant=self.__option('model_variant'),
             output_stride=self.__option('output_stride'),
             multi_grid=self.__option('multi_grid'),
-            use_bounded_activation=self.__option('use_bounded_activation'),
-            finetune_batch_norm=self.__option('fine_tune_batch_norm')
+            use_bounded_activation=self.__option('use_bounded_activation')
         )
 
         self.__logger.info('Build Graph: DeepLab')
@@ -73,14 +72,15 @@ class DeepLab:
         #########
         # if use training setting: batch norm, dropout, ...
         self.__is_training = tf.placeholder_with_default(True, [], name='is_training')
-        # if use training setting for preprocessing: augmentation
-        self.__is_training_process = tf.placeholder_with_default(True, [], name='is_training_process')
+        # # if use training setting for preprocessing: augmentation
+        # self.__is_training_process = tf.placeholder_with_default(True, [], name='is_training_process')
         # if use training data
         self.__is_training_data = tf.placeholder_with_default(True, [], name='is_training_data')
+        # self.__is_batch_norm = tf.placeholder_with_default(True, [], name='is_batch_norm')
 
         # setup TFRecord iterator and get image/segmentation map
         iterator, self.__init_op_iterator = self.__iterator.get_iterator(
-            is_training_data=self.__is_training_data, is_training_setting=self.__is_training_process)
+            is_training_data=self.__is_training_data, is_training_setting=self.__is_training)
         data = iterator.get_next()
         image = data[self.__iterator.flag['image']]
         segmentation = data[self.__iterator.flag['segmentation']]
@@ -94,7 +94,14 @@ class DeepLab:
 
         # feature from pre-trained backbone network (ResNet/Xception):
         # (batch, crop_size/output_stride, crop_size/output_stride, 2048)
-        feature, variable_endpoints = self.__feature.feature(self.__image, is_training=self.__is_training)
+
+        # If fine-tune batch norm, is_training should be True even if the test/validation phase
+        # which means that is_training is static regardless of any phases
+        # https://github.com/tensorflow/models/issues/391#issuecomment-247392028
+        feature, variable_endpoints = self.__feature.feature(self.__image,
+                                                             is_training=self.__is_training,
+                                                             is_training_bn=self.__option('fine_tune_batch_norm'))
+
         self.__logger.info(' * feature shape: %s' % feature.shape)
 
         # aspp feature: (batch, crop_size/output_stride, crop_size/output_stride, 2048)
@@ -126,15 +133,16 @@ class DeepLab:
         # optimize #
         ############
         self.__loss = self.__pixel_wise_softmax(logit, self.__segmentation)
-        trainable_variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
-
-        # L2 weight decay
-        if self.__option('weight_decay') != 0.0:
-            l2_loss = self.__option('weight_decay') * tf.add_n([tf.nn.l2_loss(v) for v in trainable_variables])
-            # l2_loss = 0.0
-        else:
-            l2_loss = 0.0
-        self.__loss += l2_loss
+        self.__loss += tf.losses.get_regularization_losses()
+        # trainable_variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
+        #
+        # # L2 weight decay
+        # if self.__option('weight_decay') != 0.0:
+        #     l2_loss = self.__option('weight_decay') * tf.add_n([tf.nn.l2_loss(v) for v in trainable_variables])
+        #     # l2_loss = 0.0
+        # else:
+        #     l2_loss = 0.0
+        # self.__loss += l2_loss
 
         # global step, which will be increased by one every time the minimizer is called
         # (https://stackoverflow.com/questions/41166681/what-does-global-step-mean-in-tensorflow)
@@ -202,7 +210,7 @@ class DeepLab:
         # logging variables
         self.__logger.info('variables')
         n_var = 0
-        for var in trainable_variables:
+        for var in tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES):
             sh = var.get_shape().as_list()
             if LOG_VAR is None:
                 self.__logger.info('%s: %s' % (var.name, str(sh)))
@@ -314,7 +322,7 @@ class DeepLab:
 
         with slim.arg_scope(
                 [slim.conv2d],
-                # weights_regularizer=slim.l2_regularizer(self.__option('weight_decay')),
+                weights_regularizer=slim.l2_regularizer(self.__option('weight_decay')),
                 weights_initializer=tf.truncated_normal_initializer(stddev=0.01),
                 reuse=reuse):
             with tf.variable_scope('logits'):
@@ -348,7 +356,7 @@ class DeepLab:
         """
 
         scopes = dict(
-            # weights_regularizer=slim.l2_regularizer(self.__option('weight_decay')),
+            weights_regularizer=slim.l2_regularizer(self.__option('weight_decay')),
             activation_fn=tf.nn.relu6 if self.__option('use_bounded_activation') else tf.nn.relu,
             padding='SAME',
             stride=1,
@@ -430,11 +438,12 @@ class DeepLab:
         """
 
         scopes = dict(
-            # weights_regularizer=slim.l2_regularizer(self.__option('weight_decay')),
+            weights_regularizer=slim.l2_regularizer(self.__option('weight_decay')),
             activation_fn=tf.nn.relu6 if self.__option('use_bounded_activation') else tf.nn.relu,
             padding='SAME',
             stride=1,
-            reuse=reuse
+            reuse=reuse,
+
         )
         # batch norm config
         if self.__option('aspp_batch_norm'):
@@ -443,7 +452,7 @@ class DeepLab:
                 is_training=is_training,
                 decay=0.9997,
                 epsilon=1e-5,
-                scale=True,
+                scale=True
             )
             scopes['normalizer_fn'] = slim.batch_norm
         else:
@@ -526,7 +535,7 @@ class DeepLab:
                 # TRAINING #
                 ############
                 logger.info(' * training')
-                feed_dict = {self.__is_training: True, self.__is_training_data: True, self.__is_training_process: True}
+                feed_dict = {self.__is_training: True, self.__is_training_data: True}
                 logger.info('  - initialization')
                 self.__session.run([self.__init_op_iterator, self.__init_op_metric], feed_dict=feed_dict)
 
@@ -561,7 +570,7 @@ class DeepLab:
                 # VALID #
                 #########
                 logger.info(' * validation')
-                feed_dict = {self.__is_training: False, self.__is_training_data: False, self.__is_training_process: False}
+                feed_dict = {self.__is_training: False, self.__is_training_data: False}
                 logger.info('  - initialization')
                 self.__session.run([self.__init_op_iterator, self.__init_op_metric], feed_dict=feed_dict)
                 logger.info('  - writing images to tensorboard')
@@ -596,15 +605,12 @@ class DeepLab:
 
     def test(self,
              is_training_data: bool=False,
-             is_training=False,
-             is_training_process=False):
+             is_training=False):
         """ Model validation """
-        feed_dict = {self.__is_training: is_training,
-                     self.__is_training_data: is_training_data,
-                     self.__is_training_process: is_training_process}
+        feed_dict = {self.__is_training: is_training, self.__is_training_data: is_training_data}
         logger = create_log(os.path.join(self.__option.checkpoint_dir, 'validation.log'), reuse=True)
-        logger.info(' * validation (is_training: %s, is_training_data: %s, is_training_process: %s)'
-                    % (is_training, is_training_data, is_training_process))
+        logger.info(' * validation (is_training: %s, is_training_data: %s)'
+                    % (is_training, is_training_data))
         logger.info('  - initialization')
         self.__session.run([self.__init_op_iterator, self.__init_op_metric], feed_dict=feed_dict)
         logger.info('  - validation start')
