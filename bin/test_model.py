@@ -17,6 +17,7 @@ def get_options():
     parser.add_argument('--checkpoint', help='Checkpoint', required=True, type=str, **share_param)
     parser.add_argument('--training_data', help='training_data', action='store_true')
     parser.add_argument('--training_setting', help='training_setting', action='store_true')
+    parser.add_argument('--training_process', help='training_process', action='store_true')
     return parser.parse_args()
 
 
@@ -27,5 +28,6 @@ if __name__ == '__main__':
     model_constructor = MODELS[args.model]
     model = model_constructor(checkpoint_version=args.checkpoint)
     model.test(is_training_data=args.training_data,
-               is_training=args.training_setting)
+               is_training=args.training_setting,
+               is_training_process=args.training_process)
 
