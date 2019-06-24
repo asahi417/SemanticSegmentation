@@ -43,7 +43,8 @@ class DeepLab:
             model_variant=self.__option('model_variant'),
             output_stride=self.__option('output_stride'),
             multi_grid=self.__option('multi_grid'),
-            use_bounded_activation=self.__option('use_bounded_activation')
+            use_bounded_activation=self.__option('use_bounded_activation'),
+            finetune_batch_norm=self.__option('fine_tune_batch_norm')
         )
 
         self.__logger.info('Build Graph: DeepLab')
@@ -98,9 +99,12 @@ class DeepLab:
         # If fine-tune batch norm, is_training should be True even if the test/validation phase
         # which means that is_training is static regardless of any phases
         # https://github.com/tensorflow/models/issues/391#issuecomment-247392028
+        # is_training_bn = self.__option('fine_tune_batch_norm')
+        # is_training_bn = tf.logical_and(tf.convert_to_tensor(self.__option('fine_tune_batch_norm')), self.__is_training)
         feature, variable_endpoints = self.__feature.feature(self.__image,
-                                                             is_training=self.__is_training,
-                                                             is_training_bn=self.__option('fine_tune_batch_norm'))
+                                                             is_training=self.__is_training
+                                                             # is_training_bn=is_training_bn
+                                                             )
 
         self.__logger.info(' * feature shape: %s' % feature.shape)
 
@@ -134,15 +138,6 @@ class DeepLab:
         ############
         self.__loss = self.__pixel_wise_softmax(logit, self.__segmentation)
         self.__loss += tf.losses.get_regularization_losses()
-        # trainable_variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
-        #
-        # # L2 weight decay
-        # if self.__option('weight_decay') != 0.0:
-        #     l2_loss = self.__option('weight_decay') * tf.add_n([tf.nn.l2_loss(v) for v in trainable_variables])
-        #     # l2_loss = 0.0
-        # else:
-        #     l2_loss = 0.0
-        # self.__loss += l2_loss
 
         # global step, which will be increased by one every time the minimizer is called
         # (https://stackoverflow.com/questions/41166681/what-does-global-step-mean-in-tensorflow)
@@ -153,12 +148,14 @@ class DeepLab:
             training_number_of_steps=self.__option('training_number_of_steps'))
 
         # optimizer
-        optimizer = util_tf.get_optimizer(self.__option('optimizer'), learning_rate)
-        if self.__option('gradient_clip') is None:
-            self.__train_op = optimizer.minimize(self.__loss, global_step=self.__global_step)
-        else:
-            grads, _ = tf.clip_by_global_norm(tf.gradients(self.__loss, trainable_variables), self.__option('gradient_clip'))
-            self.__train_op = optimizer.apply_gradients(zip(grads, trainable_variables), global_step=self.__global_step)
+        with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
+            optimizer = util_tf.get_optimizer(self.__option('optimizer'), learning_rate)
+            if self.__option('gradient_clip') is None:
+                self.__train_op = optimizer.minimize(self.__loss, global_step=self.__global_step)
+            else:
+                trainables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
+                grads, _ = tf.clip_by_global_norm(tf.gradients(self.__loss, trainables), self.__option('gradient_clip'))
+                self.__train_op = optimizer.apply_gradients(zip(grads, trainables), global_step=self.__global_step)
 
         ######################
         # evaluation metrics #
@@ -216,6 +213,10 @@ class DeepLab:
                 self.__logger.info('%s: %s' % (var.name, str(sh)))
             n_var += np.prod(sh)
         self.__logger.info('total variables: %i' % n_var)
+        for var in tf.get_collection(tf.GraphKeys.UPDATE_OPS):
+            if LOG_VAR is None:
+                self.__logger.info('update ops: %s' % var.name)
+
 
     def __get_metrics(self,
                       prediction,
