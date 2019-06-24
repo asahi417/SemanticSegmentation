@@ -137,7 +137,7 @@ class DeepLab:
         # optimize #
         ############
         self.__loss = self.__pixel_wise_softmax(logit, self.__segmentation)
-        self.__loss += tf.losses.get_regularization_losses()
+        self.__loss += tf.reduce_sum(tf.losses.get_regularization_losses())
 
         # global step, which will be increased by one every time the minimizer is called
         # (https://stackoverflow.com/questions/41166681/what-does-global-step-mean-in-tensorflow)
