@@ -24,6 +24,7 @@ def get_options():
     parser.add_argument('--off_decoder', help='unuse decoder', action='store_true')
     parser.add_argument('--off_decoder_batch_norm', help='decoder_batch_norm', action='store_true')
     parser.add_argument('--off_aspp_batch_norm', help='aspp_batch_norm', action='store_true')
+    parser.add_argument('--off_backbone_batch_norm', help='off_backbone_batch_norm', action='store_true')
     parser.add_argument('--backbone', help='Backbone', default=None, type=str, **share_param)
     parser.add_argument('--checkpoint', help='Checkpoint', default=None, type=str, **share_param)
     return parser.parse_args()
@@ -60,11 +61,13 @@ if __name__ == '__main__':
         if args.off_decoder_batch_norm:
             parameters['decoder_batch_norm'] = False
         if args.off_aspp_batch_norm:
-                parameters['aspp_batch_norm'] = False
+            parameters['aspp_batch_norm'] = False
         if args.backbone:
             parameters['model_variant'] = args.backbone
         if args.aspp_depth:
             parameters['depth'] = args.aspp_depth
+        if args.off_backbone_batch_norm:
+            parameters['fine_tune_batch_norm'] = False
 
         model = model_constructor(**parameters)
 
