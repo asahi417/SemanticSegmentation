@@ -53,10 +53,10 @@ class Parameter:
     use_bounded_activation = False
 
     aspp_with_separable_conv = True
-    aspp_batch_norm = True
+    aspp_batch_norm = True  # shouldn't turn off because pre-trained network has batchnormalization
 
     decoder_with_separable_conv = True
-    decoder_batch_norm = True
+    decoder_batch_norm = True  # shouldn't turn off because pre-trained network has batchnormalization
 
 
     # The training step in which exact hard example mining kicks off. Note we
