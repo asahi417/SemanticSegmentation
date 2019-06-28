@@ -6,10 +6,10 @@ import os
 
 
 def get_options():
-    parser = argparse.ArgumentParser(description='Decode tfrecord.',
+    parser = argparse.ArgumentParser(description='Encoding tfrecord.',
                                      formatter_class=argparse.RawTextHelpFormatter)
     share_param = {'nargs': '?', 'action': 'store', 'const': None, 'choices': None, 'metavar': None}
-    parser.add_argument('-d', '--data', help='Dataset.', default='ade20k', type=str, **share_param)
+    parser.add_argument('-d', '--data', help='Dataset name (`pascal` or `ade20k`)', default='ade20k', type=str, **share_param)
     return parser.parse_args()
 
 

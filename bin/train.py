@@ -10,7 +10,7 @@ MODELS = dict(
 
 
 def get_options():
-    parser = argparse.ArgumentParser(description='Decode tfrecord.',
+    parser = argparse.ArgumentParser(description='Training',
                                      formatter_class=argparse.RawTextHelpFormatter)
     share_param = {'nargs': '?', 'action': 'store', 'const': None, 'choices': None, 'metavar': None}
     parser.add_argument('-d', '--data', help='Dataset', default='pascal', type=str, **share_param)
@@ -22,11 +22,9 @@ def get_options():
     parser.add_argument('--crop_size', help='crop size', default=None, type=int, **share_param)
     parser.add_argument('--output_stride', help='output_stride', default=None, type=int, **share_param)
     parser.add_argument('--off_decoder', help='unuse decoder', action='store_true')
-    # parser.add_argument('--off_decoder_batch_norm', help='decoder_batch_norm', action='store_true')
-    # parser.add_argument('--off_aspp_batch_norm', help='aspp_batch_norm', action='store_true')
     parser.add_argument('--off_fine_tune_batch_norm', help='off_fine_tune_batch_norm', action='store_true')
-    parser.add_argument('--backbone', help='Backbone', default=None, type=str, **share_param)
-    parser.add_argument('--checkpoint', help='Checkpoint', default=None, type=str, **share_param)
+    parser.add_argument('--backbone', help='backbone network', default=None, type=str, **share_param)
+    parser.add_argument('--checkpoint', help='checkpoint', default=None, type=str, **share_param)
     return parser.parse_args()
 
 
@@ -58,10 +56,6 @@ if __name__ == '__main__':
             elif args.output_stride == 16:
                 parameters['output_stride'] = 16
                 parameters['atrous_rate'] = [6, 12, 18]
-        # if args.off_decoder_batch_norm:
-        #     parameters['decoder_batch_norm'] = False
-        # if args.off_aspp_batch_norm:
-        #     parameters['aspp_batch_norm'] = False
         if args.backbone:
             parameters['model_variant'] = args.backbone
         if args.aspp_depth:
