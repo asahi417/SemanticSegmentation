@@ -530,7 +530,6 @@ class DeepLab:
         segmentations = []
         predictions = []
         while True:
-            self.__logger.info('  - iteration: %i' % i)
             try:
                 image, segmentation, pred = self.__session.run(
                     [self.__image, self.__segmentation, self.__prediction],
