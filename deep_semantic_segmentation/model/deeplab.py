@@ -519,7 +519,7 @@ class DeepLab:
                     scope='dropout')
         return concat_logits
 
-    def predict_dataset(self, iteration_number, is_training:bool=False):
+    def predict_dataset(self, data_size, is_training:bool=False):
         self.__logger.info('Get prediction from dataset')
         feed_dict = {self.__is_training: False, self.__is_training_data: is_training}
         self.__logger.info('  - initialization')
@@ -529,7 +529,7 @@ class DeepLab:
         images = []
         segmentations = []
         predictions = []
-        for i in range(iteration_number):
+        while True:
             self.__logger.info('  - iteration: %i' % i)
             try:
                 image, segmentation, pred = self.__session.run(
@@ -541,7 +541,11 @@ class DeepLab:
             except tf.errors.OutOfRangeError:
                 self.__logger.info('WARNING: all data have been produced.')
                 break
-        return images, segmentations, predictions
+
+            if len(images) > data_size:
+                break
+
+        return images[:data_size], segmentations[:data_size], predictions[:data_size]
 
     def train(self):
         """ Model training method. Logs are all saved in tensorboard.
