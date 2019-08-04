@@ -74,7 +74,8 @@ class TFRecord:
                  min_resize_value: int=None,
                  max_resize_value: int=None,
                  resize_factor: int=None,
-                 batch_size: int=8):
+                 batch_size: int=8,
+                 random_seed: int=None):
         """ Constructor of TFRecorder """
         if data_name not in VALID_DATA_NAME.keys():
             raise ValueError('undefined data: %s not in %s' % (data_name, list(VALID_DATA_NAME.keys())))
@@ -101,6 +102,7 @@ class TFRecord:
         self.num_class = VALID_DATA_NAME[data_name]['num_class']
 
         self.__shape_checker = ShapeCheck()
+        self.__random_seed = random_seed
 
     @property
     def tfrecord_dir(self):
@@ -120,7 +122,7 @@ class TFRecord:
         preprocessing_function = self.image_preprocessing(is_training_setting)
         data_set_api = tf.data.TFRecordDataset(tfrecord_path)
         data_set_api = data_set_api.map(self.parse_tfrecord).map(preprocessing_function)
-        data_set_api = data_set_api.shuffle(buffer_size=100)
+        data_set_api = data_set_api.shuffle(buffer_size=100, seed=self.__random_seed)
         data_set_api = data_set_api.repeat(1)
         data_set_api = data_set_api.batch(self.batch_size).prefetch(self.batch_size)
         iterator = data_set_api.make_one_shot_iterator()

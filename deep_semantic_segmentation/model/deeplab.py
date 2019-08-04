@@ -20,10 +20,11 @@ class DeepLab:
                  data_name: str=None,
                  checkpoint: str = None,
                  checkpoint_version: str = None,
+                 random_seed: int=None,
                  **kwargs):
         self.__logger = create_log()
         self.__logger.info(__doc__)
-
+        self.__random_seed = random_seed
         self.__option = ParameterManager(model_name='DeepLab',
                                          data_name=data_name,
                                          checkpoint_dir=checkpoint,
@@ -38,7 +39,8 @@ class DeepLab:
                                    batch_size=self.__option('batch_size'),
                                    min_resize_value=self.__option('min_resize_value'),
                                    max_resize_value=self.__option('max_resize_value'),
-                                   resize_factor=self.__option('output_stride'))
+                                   resize_factor=self.__option('output_stride'),
+                                   random_seed=self.__random_seed)
         self.__feature = DeepImageFeature(
             model_variant=self.__option('model_variant'),
             output_stride=self.__option('output_stride'),
@@ -516,6 +518,30 @@ class DeepLab:
                     is_training=is_training,
                     scope='dropout')
         return concat_logits
+
+    def predict_dataset(self, iteration_number, is_training:bool=False):
+        self.__logger.info('Get prediction from dataset')
+        feed_dict = {self.__is_training: False, self.__is_training_data: is_training}
+        self.__logger.info('  - initialization')
+        # self.__session.run([self.__init_op_iterator, self.__init_op_metric], feed_dict=feed_dict)
+        self.__session.run([self.__init_op_iterator], feed_dict=feed_dict)
+
+        images = []
+        segmentations = []
+        predictions = []
+        for i in range(iteration_number):
+            self.__logger.info('  - iteration: %i' % i)
+            try:
+                image, segmentation, pred = self.__session.run(
+                    [self.__image, self.__segmentation, self.__prediction],
+                    feed_dict=feed_dict)
+                images.extend(image)
+                segmentations.extend(segmentation)
+                predictions.extend(pred)
+            except tf.errors.OutOfRangeError:
+                self.__logger.info('WARNING: all data have been produced.')
+                break
+        return images, segmentations, predictions
 
     def train(self):
         """ Model training method. Logs are all saved in tensorboard.
