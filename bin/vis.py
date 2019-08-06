@@ -31,11 +31,13 @@ if __name__ == '__main__':
     model = model_constructor(checkpoint_version=args.checkpoint, random_seed=args.seed)
     images, segmentations, predictions = model.predict_from_data(args.number, is_training=args.training_data)
 
-    col_n = 3  # cols
     row_n = args.number  # rows
+    col_n = 3  # cols
     margin = 10  # margin for output
-    canvas_shape = (col_n * model.option('crop_height') + (margin * col_n) + margin,
-                    row_n * model.option('crop_width') + (margin * row_n) + margin, 3)
+    canvas_shape = (
+        row_n * model.option('crop_height') + (margin * row_n) + margin,
+        col_n * model.option('crop_width') + (margin * col_n) + margin,
+        3)
     canvas = 255 * np.ones(canvas_shape, dtype=np.uint8)
 
     start_y = margin
@@ -46,7 +48,7 @@ if __name__ == '__main__':
         prediction = deep_semantic_segmentation.util.coloring_segmentation(predictions[i])
 
         start_x = margin
-        print(start_y, start_y + model.option('crop_height'))
+        print(start_y, start_y + model.option('crop_height'), canvas.shape)
 
         canvas[start_y:start_y + model.option('crop_height'), start_x:start_x+model.option('crop_width'), :] = images[i].astype(np.uint8)
         start_x += model.option('crop_width') + margin
