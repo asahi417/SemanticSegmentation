@@ -34,16 +34,18 @@ if __name__ == '__main__':
     row_n = args.number  # rows
     col_n = 2 + len(checkpoints)  # cols
     margin = 10  # margin for output
-    canvas_shape = (
-        row_n * model.option('crop_height') + (margin * row_n) + margin,
-        col_n * model.option('crop_width') + (margin * col_n) + margin,
-        3)
-    canvas = 255 * np.ones(canvas_shape, dtype=np.uint8)
 
     for ckpt_n, ckpt in enumerate(checkpoints):
         tf.reset_default_graph()
         model = model_constructor(checkpoint_version=args.checkpoint, random_seed=args.seed)
         images, segmentations, predictions = model.predict_from_data(args.number, is_training=args.training_data)
+
+        if ckpt_n == 0:
+            canvas_shape = (
+                row_n * model.option('crop_height') + (margin * row_n) + margin,
+                col_n * model.option('crop_width') + (margin * col_n) + margin,
+                3)
+            canvas = 255 * np.ones(canvas_shape, dtype=np.uint8)
 
         start_y = margin
 
