@@ -48,9 +48,8 @@ def coloring_segmentation(segmentation):
     vis = segmentation.astype(int)
     vis_flatten = np.reshape(vis, [-1]).tolist()
     vis_flatten_colored = np.array([colormap_ndarray[i] for i in vis_flatten], dtype=np.uint8)
-    print(vis.shape)
-    batch, height, width, _ = vis.shape
-    vis_colored = np.reshape(vis_flatten_colored, [batch, height, width, 3])
+    height, width, _ = vis.shape
+    vis_colored = np.reshape(vis_flatten_colored, [height, width, 3])
     return vis_colored
 
 
