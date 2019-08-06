@@ -6,6 +6,7 @@ import os
 import numpy as np
 import scipy.misc as misc
 import tensorflow as tf
+import os
 
 
 MODELS = dict(
@@ -17,7 +18,7 @@ def get_options():
     share_param = {'nargs': '?', 'action': 'store', 'const': None, 'choices': None, 'metavar': None}
     parser.add_argument('-m', '--model', help='Model', default='deeplab', type=str, **share_param)
     parser.add_argument('-c', '--checkpoint', help='Model checkpoint', required=True, type=str, **share_param)
-    parser.add_argument('--path', help='path to save output', default='./sample.jpg', type=str, **share_param)
+    parser.add_argument('--path', help='path to save output', default='./', type=str, **share_param)
     parser.add_argument('-n', '--number', help='image size', default=5, type=int, **share_param)
     parser.add_argument('--seed', help='random seed', default=123, type=int, **share_param)
     parser.add_argument('--training_data', help='use training data', action='store_true')
@@ -67,7 +68,10 @@ if __name__ == '__main__':
 
             start_y +=  model.option('crop_height') + margin
 
-    print('image saved at:', args.path)
-    misc.imsave(args.path, canvas)
+    if not os.path.exists(args.path):
+        os.makedirs(args.path, exist_ok=True)
+    path = os.path.join(args.path, '%i_%s.jpg' %(args.seed '_'.join(checkpoints)))
+    print('image saved at:', path)
+    misc.imsave(path, canvas)
 
 # misc.imsave('./bin/img/generated_img/%s-%s-v%s.jpg' % (args.model, args.data, version), canvas)
