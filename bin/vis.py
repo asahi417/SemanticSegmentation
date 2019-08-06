@@ -46,6 +46,7 @@ if __name__ == '__main__':
         prediction = deep_semantic_segmentation.util.coloring_segmentation(predictions[i])
 
         start_x = margin
+        print(start_y, start_y + model.option('crop_height'))
 
         canvas[start_y:start_y + model.option('crop_height'), start_x:start_x+model.option('crop_width'), :] = images[i].astype(np.uint8)
         start_x += model.option('crop_width') + margin
