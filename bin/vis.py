@@ -5,6 +5,7 @@ import argparse
 import os
 import numpy as np
 import scipy.misc as misc
+import tensorflow as tf
 
 
 MODELS = dict(
@@ -28,11 +29,10 @@ if __name__ == '__main__':
     args = get_options()
 
     model_constructor = MODELS[args.model]
-    model = model_constructor(checkpoint_version=args.checkpoint, random_seed=args.seed)
-    images, segmentations, predictions = model.predict_from_data(args.number, is_training=args.training_data)
+    checkpoints = args.checkpoint.split(',')
 
     row_n = args.number  # rows
-    col_n = 3  # cols
+    col_n = 2 + len(checkpoints)  # cols
     margin = 10  # margin for output
     canvas_shape = (
         row_n * model.option('crop_height') + (margin * row_n) + margin,
@@ -40,24 +40,32 @@ if __name__ == '__main__':
         3)
     canvas = 255 * np.ones(canvas_shape, dtype=np.uint8)
 
-    start_y = margin
+    for ckpt_n, ckpt in enumerate(checkpoints):
+        tf.reset_default_graph()
+        model = model_constructor(checkpoint_version=args.checkpoint, random_seed=args.seed)
+        images, segmentations, predictions = model.predict_from_data(args.number, is_training=args.training_data)
 
-    for i in range(args.number):
+        start_y = margin
 
-        segmentation = deep_semantic_segmentation.util.coloring_segmentation(segmentations[i])
-        prediction = deep_semantic_segmentation.util.coloring_segmentation(predictions[i])
+        for i in range(args.number):
 
-        start_x = margin
-        print(start_y, start_y + model.option('crop_height'), canvas.shape)
+            segmentation = deep_semantic_segmentation.util.coloring_segmentation(segmentations[i])
+            prediction = deep_semantic_segmentation.util.coloring_segmentation(predictions[i])
 
-        canvas[start_y:start_y + model.option('crop_height'), start_x:start_x+model.option('crop_width'), :] = images[i].astype(np.uint8)
-        start_x += model.option('crop_width') + margin
-        canvas[start_y:start_y + model.option('crop_height'), start_x:start_x+model.option('crop_width'), :] = segmentation
-        start_x += model.option('crop_width') + margin
-        canvas[start_y:start_y + model.option('crop_height'), start_x:start_x+model.option('crop_width'), :] = prediction
+            start_x = margin
+            # print(start_y, start_y + model.option('crop_height'), canvas.shape)
+            if ckpt_n == 0:
+                canvas[start_y:start_y + model.option('crop_height'), start_x:start_x+model.option('crop_width'), :] = images[i].astype(np.uint8)
+            start_x += model.option('crop_width') + margin
+            if ckpt_n == 0:
+                canvas[start_y:start_y + model.option('crop_height'), start_x:start_x+model.option('crop_width'), :] = segmentation
 
-        start_y +=  model.option('crop_height') + margin
+            start_x += (model.option('crop_width') + margin) * (ckpt_n + 1)
+            canvas[start_y:start_y + model.option('crop_height'), start_x:start_x+model.option('crop_width'), :] = prediction
 
+            start_y +=  model.option('crop_height') + margin
+
+    print('image saved at:', args.path)
     misc.imsave(args.path, canvas)
 
 # misc.imsave('./bin/img/generated_img/%s-%s-v%s.jpg' % (args.model, args.data, version), canvas)
