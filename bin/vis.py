@@ -37,7 +37,7 @@ if __name__ == '__main__':
 
     for ckpt_n, ckpt in enumerate(checkpoints):
         tf.reset_default_graph()
-        model = model_constructor(checkpoint_version=args.checkpoint, random_seed=args.seed)
+        model = model_constructor(checkpoint_version=ckpt, random_seed=args.seed)
         images, segmentations, predictions = model.predict_from_data(args.number, is_training=args.training_data)
 
         if ckpt_n == 0:
