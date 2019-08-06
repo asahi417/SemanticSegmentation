@@ -25,11 +25,10 @@ setup(
     install_requires=[
         'Pillow',
         'numpy',
-        tensorflow_name
-        # 'tensorflow-gpu>=1.10.1',
-        # 'scipy>=1.2.0',
+        tensorflow_name,
+        'scipy>=1.2.0',
+        'cython'
         # 'toml>=0.10.0',
-        # 'cython'
         # 'pandas',
         # 'nltk',
         # 'sklearn',

@@ -62,7 +62,7 @@ def get_learning_rate(base_learning_rate: float,
 
 
 def coloring_segmentation(segmentation, shape):
-    """ from segmentation map with class label to color images """
+    """ from segmentation map with class label to color images [suppposed to be used in tf graph] """
     [height, width] = shape
 
     def segmentation_colormap():

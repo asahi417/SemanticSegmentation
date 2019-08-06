@@ -4,6 +4,7 @@ import shutil
 import urllib.request
 import tarfile
 from glob import glob
+import numpy as np
 
 # HOME_DIR = os.path.join(os.path.expanduser("~"), 'semantic_segmentation_data')
 WORK_DIR = os.path.join(
@@ -23,6 +24,33 @@ CHECKPOINTS_FINETUNES_URL = dict(
     xception_65_coco='http://download.tensorflow.org/models/xception_65_coco_pretrained_2018_10_02.tar.gz',
     xception_71='http://download.tensorflow.org/models/xception_71_2018_05_09.tar.gz'
 )
+
+
+def coloring_segmentation(segmentation):
+    """ from segmentation map with class label to color images [non tf] """
+
+    def segmentation_colormap():
+        """Creates a segmentation colormap for visualization.
+
+        Returns:
+            A Colormap for visualizing segmentation results.
+        """
+        colormap = np.zeros((256, 3), dtype=int)
+        ind = np.arange(256, dtype=int)
+
+        for shift in reversed(range(8)):
+            for channel in range(3):
+                colormap[:, channel] |= ((ind >> channel) & 1) << shift
+            ind >>= 3
+        return colormap
+
+    colormap_ndarray = segmentation_colormap()
+    vis = segmentation.astype(int)
+    vis_flatten = np.reshape(vis, shape=[-1]).tolist()
+    vis_flatten_colored = np.array([colormap_ndarray[i] for i in vis_flatten], dtype=np.uint8)
+    batch, height, width, _= vis.shape()
+    vis_colored = np.reshape(vis_flatten_colored, shape=[batch, height, width, 3])
+    return vis_colored
 
 
 def load_finetune_model(model_variant):

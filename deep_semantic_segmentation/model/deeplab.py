@@ -69,6 +69,10 @@ class DeepLab:
             else:
                 raise ValueError('backbone network is not found')
 
+    @property
+    def option(self):
+        return self.__option
+
     def __build_graph(self):
         #########
         # graph #
@@ -519,7 +523,8 @@ class DeepLab:
                     scope='dropout')
         return concat_logits
 
-    def predict_dataset(self, data_size, is_training:bool=False):
+    def predict_from_data(self, data_size, is_training:bool=False):
+        """ predict from trained dataset """
         self.__logger.info('Get prediction from dataset')
         feed_dict = {self.__is_training: False, self.__is_training_data: is_training}
         self.__logger.info('  - initialization')
