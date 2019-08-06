@@ -17,7 +17,7 @@ def get_options():
     parser.add_argument('-m', '--model', help='Model', default='deeplab', type=str, **share_param)
     parser.add_argument('-c', '--checkpoint', help='Model checkpoint', required=True, type=str, **share_param)
     parser.add_argument('--path', help='path to save output', default='./sample.jpg', type=str, **share_param)
-    parser.add_argument('--size', help='image size', default=5, type=int, **share_param)
+    parser.add_argument('-n', '--number', help='image size', default=5, type=int, **share_param)
     parser.add_argument('--seed', help='random seed', default=123, type=int, **share_param)
     parser.add_argument('--training_data', help='use training data', action='store_true')
     return parser.parse_args()
@@ -29,10 +29,10 @@ if __name__ == '__main__':
 
     model_constructor = MODELS[args.model]
     model = model_constructor(checkpoint_version=args.checkpoint, random_seed=args.seed)
-    images, segmentations, predictions = model.predict_from_data(args.size, is_training=args.training_data)
+    images, segmentations, predictions = model.predict_from_data(args.number, is_training=args.training_data)
 
     col_n = 3  # cols
-    row_n = args.size  # rows
+    row_n = args.number  # rows
     margin = 10  # margin for output
     canvas_shape = (col_n * model.option('crop_height') + (margin * col_n) + margin,
                     row_n * model.option('crop_width') + (margin * row_n) + margin, 3)
@@ -40,7 +40,7 @@ if __name__ == '__main__':
 
     start_y = margin
 
-    for i in range(args.size):
+    for i in range(args.number):
 
         segmentation = deep_semantic_segmentation.util.coloring_segmentation(segmentations[i])
         prediction = deep_semantic_segmentation.util.coloring_segmentation(predictions[i])
