@@ -70,7 +70,7 @@ if __name__ == '__main__':
 
     if not os.path.exists(args.path):
         os.makedirs(args.path, exist_ok=True)
-    path = os.path.join(args.path, '%i_%s.jpg' %(args.seed '_'.join(checkpoints)))
+    path = os.path.join(args.path, '%i_%s.jpg' %(args.seed, '_'.join(checkpoints)))
     print('image saved at:', path)
     misc.imsave(path, canvas)
 
