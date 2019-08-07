@@ -15,7 +15,7 @@ class Parameter:
     fine_tune_batch_norm = True
 
     training_number_of_steps = 30000
-    batch_size = 4
+    batch_size = 8
 
     # shape
     crop_height = 513
@@ -36,7 +36,8 @@ class Parameter:
     decoder_output_stride = 4
 
     # ASPP and decoder feature dimension
-    depth = 256
+    # depth = 256
+    depth = 128
 
     # For weight_decay, use 0.00004 for MobileNet-V2 or Xcpetion model variants.
     # Use 0.0001 for ResNet model variants.

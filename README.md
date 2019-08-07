@@ -2,11 +2,11 @@
 [![dep1](https://img.shields.io/badge/Tensorflow-1.3+-blue.svg)](https://www.tensorflow.org/)  
 Tensorflow implementation of [DeepLab v3+](http://openaccess.thecvf.com/content_ECCV_2018/papers/Liang-Chieh_Chen_Encoder-Decoder_with_Atrous_ECCV_2018_paper.pdf).
 Although you can find [the official implementation](https://github.com/tensorflow/models/tree/master/research/deeplab) from Google research,
-it took me lots of time to understand the codes mainly because of intensive usage of high level tensorflow API and complex dependency in between each script.
-Thus, I decided to re-implement DeepLab v3+ by myself to understand the architecture and see the powerful representation capacity. 
-Also I provide minimal configuration by which one can run training on machine with only single GPU, since 
+it took a lot of time to understand the codes mainly because of intensive usage of high level tensorflow API and complex dependency in between each script.
+Thus, we decided to re-implement DeepLab v3+ by myself to understand the architecture and see the representation capacity. 
+Also we provide minimal configuration by which one can run training on machine with only single GPU, since 
 the original configuration in the paper requires pretty high spec machine with multiple GPUs because of the huge model size.
-Some parts of this repository, such as scripts of Xception and ResNet, are directory inherited from the official implementation.  
+Some parts of this repository, such as scripts of Xception/ResNet and those pre-trained checkpoints, are directory inherited from the official implementation.  
 
 ## Get started
 
@@ -38,8 +38,7 @@ optional arguments:
 A directory (`./data/data` and `./data/tfrecords`) will be created as the place to store data related files.
 
 ### Training
-Model can be trained on [PASCAL](http://host.robots.ox.ac.uk/pascal/VOC/voc2012/) or [ADE20k](https://groups.csail.mit.edu/vision/datasets/ADE20K/)
-by
+Once the tfrecord is ready, you train model ([default parameter](./deep_semantic_segmentation/parameter_manager/deeplab)).
 
 ```
 ./bin/train.py [-h] [-d [DATA]] [-m [MODEL]] [-b [BATCH_SIZE]]
@@ -77,21 +76,35 @@ optional arguments:
 
 ```
 
-### Result
-  
+The checkpoints will be created under `./data/checkpoints/model/DeepLab/` and you can launch tensorboard (`tensorboard --logdir==.`) 
+to monitor training progress.
 
-### Train model
-After producing TFRecord file, one can start training DeepLav by 
+<p align="center">
+  <img src="./img/tensorboard_sample_0.png" width="800">
+  <br><i>Fig 1: tensorboard view for learning curve </i>
+</p>
 
-```
-python ./bin/train.py -d pascal --crop_size 321 --aspp_depth 128 --backbone xception_41 -b 12 --off_decoder
-```
+<p align="center">
+  <img src="./img/tensorboard_sample_1.png" width="800">
+  <br><i>Fig 2: tensorboard view for sample prediction </i>
+</p>
 
-Note that the default [configurations](./deep_semantic_segmentation/parameter_manager/deeplab/pascal.py) are based on original 
-setting, but it requires fairly huge computational resources, so the above option is one way
-to compromise the quality and make sure the model can be trained even with small GPU server.
-   
- 
- 
+For pascal data, it takes 5 days on single Tesla K80.
+
+## Result
+We trained DeepLab with couple of hyperparameter combinations and results are as below.
+
+| model | decoder | backbone   | mIoU | pixel accuracy |
+| ----- | ------- | ---------- | ---- | -------------- | 
+| **A** | `False` | Xception41 |    |  | 
+| **B** | `False` | Xception65 |    |  |
+| **C** | `True`  | Xception41 |    |  |
+| **D** | `True`  | Xception65 |    |  |
+
+### Discussion 
+<p align="center">
+  <img src="./images/.jpg" width="900">
+  <br><i>Fig 1:  </i>
+</p>
 
 
