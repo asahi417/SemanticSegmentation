@@ -95,7 +95,7 @@ For pascal data, it takes 5 days on single Tesla K80.
 We trained DeepLab with couple of hyperparameter combinations and results are as below.
 
 |  model  | decoder | backbone     | mIoU | pixel accuracy |
-| :-----: | ------- | ------------ | ---- | -------------- | 
+|:-----:| ------- | ------------ | ---- | -------------- | 
 | **A**   | `False` | `Xception41` | TBA  | TBA | 
 | **B**   | `False` | `Xception65` | TBA  | TBA |
 | **C**   | `True`  | `Xception41` | TBA  | TBA |
