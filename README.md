@@ -96,10 +96,10 @@ We trained DeepLab with couple of hyperparameter combinations and results are as
 
 | model | decoder | backbone     | mIoU | pixel accuracy |
 | ----- | ------- | ------------ | ---- | -------------- | 
-| **A** | `False` | `Xception41` |    |  | 
-| **B** | `False` | `Xception65` |    |  |
-| **C** | `True`  | `Xception41` |    |  |
-| **D** | `True`  | `Xception65` |    |  |
+| **A** | `False` | `Xception41` | TBA  | TBA | 
+| **B** | `False` | `Xception65` | TBA  | TBA |
+| **C** | `True`  | `Xception41` | TBA  | TBA |
+| **D** | `True`  | `Xception65` | TBA  | TBA |
 
 Backbone network checkpoints are downloaded from google's [model zoo](https://github.com/tensorflow/models/blob/master/research/deeplab/g3doc/model_zoo.md) (as Xception65, one trained with Coco is employed here).
 We fix output stride of atrous convolution module to be 16 and decoder output stride as 4, so total output stride 
@@ -110,7 +110,7 @@ To see the effect of decoder module, we show some sample predictions from valida
  
 <p align="center">
   <img src="./img/123_auexrplozt_krcnnyfrxk.jpg" width="750">
-  <br><i>Fig 3: From right to left, (i) original image, (ii) ground truth, (ii) model without decoder, (iv) model with decoder </i>
+  <br><i>Fig 3: From left to right, (i) original image, (ii) ground truth, (ii) model without decoder, (iv) model with decoder </i>
 </p>
 
 Model **B** is used as without decoder and **D** as with decoder.  
