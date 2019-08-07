@@ -107,19 +107,21 @@ We fix output stride of atrous convolution module to be 16 and decoder output st
 
 ### discussion
 ***decoder***    
-To see the effect of decoder module, we show some sample prediction from validation dataset of PASCAL in figure 3. 
-
+To see the effect of decoder module, we show some sample predictions from validation dataset of PASCAL in figure 3.
+ 
 <p align="center">
   <img src="./img/123_auexrplozt_krcnnyfrxk.jpg" width="750">
-  <br><i>Fig 3: From right to left, *original image*, *ground truth*, *model B*, *model D*, </i>
+  <br><i>Fig 3: From right to left, (i) original image, (ii) ground truth, (ii) model without decoder, (iv) model with decoder </i>
 </p>
+
+Model **B** is used as without decoder and **D** as with decoder.  
 
 ***learning behavior***  
 As you can see in figure 4, there is a common pattern in learning curve that validation mean IoU stays in plateau of low accuracy
 for first 8k steps and then increase massively, while training mIoU increase constantly. 
   
 <p align="center">
-  <img src="./img/miou.png" width="500">
+  <img src="./img/miou.png" width="600">
   <br><i>Fig 4: mIoU learning curves over training/validation data </i>
 </p>
 
