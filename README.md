@@ -18,7 +18,7 @@ pip install .
 
 
 ## Train model
-Train DeeplLab model over some benchmark daataset.
+Train DeeplLab model over some benchmark dataset.
  
 ### Download dataset and converting as TFRecord 
 Public benchmark datasets for semantic segmentation, including [PASCAL](http://host.robots.ox.ac.uk/pascal/VOC/voc2012/) and [ADE20k](https://groups.csail.mit.edu/vision/datasets/ADE20K/),
@@ -94,17 +94,17 @@ For pascal data, it takes 5 days on single Tesla K80.
 ## Result
 We trained DeepLab with couple of hyperparameter combinations and results are as below.
 
-| model | decoder | backbone   | mIoU | pixel accuracy |
-| ----- | ------- | ---------- | ---- | -------------- | 
-| **A** | `False` | Xception41 |    |  | 
-| **B** | `False` | Xception65 |    |  |
-| **C** | `True`  | Xception41 |    |  |
-| **D** | `True`  | Xception65 |    |  |
+| model | decoder | backbone     | mIoU | pixel accuracy |
+| ----- | ------- | ------------ | ---- | -------------- | 
+| **A** | `False` | `Xception41` |    |  | 
+| **B** | `False` | `Xception65` |    |  |
+| **C** | `True`  | `Xception41` |    |  |
+| **D** | `True`  | `Xception65` |    |  |
 
 ### Discussion 
 <p align="center">
-  <img src="./images/.jpg" width="900">
-  <br><i>Fig 1:  </i>
+  <img src="./img/123_auexrplozt_krcnnyfrxk.jpg" width="800">
+  <br><i>Fig 3: sample prediction </i>
 </p>
 
 
