@@ -105,8 +105,7 @@ Backbone network checkpoints are downloaded from google's [model zoo](https://gi
 We fix output stride of atrous convolution module to be 16 and decoder output stride as 4, so total output stride 
 (input width/output width) is 4 if decoder is `True`, otherwise 16.
 
-### discussion
-***decoder***    
+### discussion 1: decoder    
 To see the effect of decoder module, we show some sample predictions from validation dataset of PASCAL in figure 3.
  
 <p align="center">
@@ -116,7 +115,7 @@ To see the effect of decoder module, we show some sample predictions from valida
 
 Model **B** is used as without decoder and **D** as with decoder.  
 
-***learning behavior***  
+### discussion 2: learning behavior  
 As you can see in figure 4, there is a common pattern in learning curve that validation mean IoU stays in plateau of low accuracy
 for first 8k steps and then increase massively, while training mIoU increase constantly. 
   
