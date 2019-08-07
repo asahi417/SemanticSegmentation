@@ -94,12 +94,12 @@ For pascal data, it takes 5 days on single Tesla K80.
 ## RESULT
 We trained DeepLab with couple of hyperparameter combinations and results are as below.
 
-| model | decoder | backbone     | mIoU | pixel accuracy |
-| ----- | ------- | ------------ | ---- | -------------- | 
-| **A** | `False` | `Xception41` | TBA  | TBA | 
-| **B** | `False` | `Xception65` | TBA  | TBA |
-| **C** | `True`  | `Xception41` | TBA  | TBA |
-| **D** | `True`  | `Xception65` | TBA  | TBA |
+|  model  | decoder | backbone     | mIoU | pixel accuracy |
+| :-----: | ------- | ------------ | ---- | -------------- | 
+| **A**   | `False` | `Xception41` | TBA  | TBA | 
+| **B**   | `False` | `Xception65` | TBA  | TBA |
+| **C**   | `True`  | `Xception41` | TBA  | TBA |
+| **D**   | `True`  | `Xception65` | TBA  | TBA |
 
 Backbone network checkpoints are downloaded from google's [model zoo](https://github.com/tensorflow/models/blob/master/research/deeplab/g3doc/model_zoo.md) (as Xception65, one trained with Coco is employed here).
 We fix output stride of atrous convolution module to be 16 and decoder output stride as 4, so total output stride 
