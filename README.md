@@ -106,7 +106,8 @@ We fix output stride of atrous convolution module to be 16 and decoder output st
 (input width/output width) is 4 if decoder is `True`, otherwise 16.
 
 ### discussion 1: decoder    
-To see the effect of decoder module, we show some sample predictions from validation dataset of PASCAL in figure 3.
+To see the effect of decoder module, we show some sample predictions from validation dataset of PASCAL in figure 3
+(produced by [this script](./bin/vis.py)).
  
 <p align="center">
   <img src="./img/123_auexrplozt_krcnnyfrxk.jpg" width="750">

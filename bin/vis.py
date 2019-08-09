@@ -1,4 +1,4 @@
-""" train model """
+""" script to output image """
 
 import deep_semantic_segmentation
 import argparse
