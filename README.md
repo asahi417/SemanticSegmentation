@@ -94,12 +94,12 @@ For pascal data, it takes 5 days on single Tesla K80.
 ## RESULT
 We trained DeepLab with couple of hyperparameter combinations and results are as below.
 
-| model | decoder | backbone     | mIoU | pixel accuracy |
-|:-----:|:-------:|:------------:|:----:|:--------------:| 
-| **A** | `False` | `Xception41` | TBA  | TBA | 
-| **B** | `False` | `Xception65` | TBA  | TBA |
-| **C** | `True`  | `Xception41` | TBA  | TBA |
-| **D** | `True`  | `Xception65` | TBA  | TBA |
+| model | decoder | backbone     | mean IoU | pixel accuracy |
+|:-----:|:-------:|:------------:|:--------:|:--------------:| 
+| **A** | `False` | `Xception41` | 0.72     | 0.92 | 
+| **B** | `True`  | `Xception41` | 0.72     | 0.92 |
+| **C** | `False` | `Xception65` | 0.79     | 0.95 |
+| **D** | `True`  | `Xception65` | 0.81     | 0.95 |
 
 Backbone network checkpoints are downloaded from google's [model zoo](https://github.com/tensorflow/models/blob/master/research/deeplab/g3doc/model_zoo.md) (as Xception65, one trained with Coco is employed here).
 We fix output stride of atrous convolution module to be 16 and decoder output stride as 4, so total output stride 
@@ -113,7 +113,8 @@ To see the effect of decoder module, we show some sample predictions from valida
   <br><i>Fig 3: From left to right, (i) original image, (ii) ground truth, (ii) model without decoder, (iv) model with decoder </i>
 </p>
 
-Model **B** is used as without decoder and **D** as with decoder.  
+Model **C** is used as without decoder and **D** as with decoder. Even though the metrics (mean IoU and pixel accuracy)
+are not drastically improved, figure 3 shows decoder's capacity to capture the detailed edge information from image.   
 
 ### discussion 2: learning behavior  
 As you can see in figure 4, there is a common pattern in learning curve that validation mean IoU stays in plateau of low accuracy
