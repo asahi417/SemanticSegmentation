@@ -110,7 +110,7 @@ To see the effect of decoder module, we show some sample predictions from valida
 (produced by [this script](./bin/vis.py)).
  
 <p align="center">
-  <img src="./img/123_auexrplozt_krcnnyfrxk.jpg" width="750">
+  <img src="./img/234_hkvgchnedh_jlyldpquwn.jpg" width="750">
   <br><i>Fig 3: From left to right, (i) original image, (ii) ground truth, (ii) model without decoder, (iv) model with decoder </i>
 </p>
 
