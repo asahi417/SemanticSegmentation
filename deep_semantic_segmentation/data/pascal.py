@@ -36,7 +36,26 @@ def download(raw_data_dir: str=None):
     if not os.path.exists(path_unzip_voc):
         LOGGER.info('unzipping: %s -> %s' % (path_zip, path_unzip_voc))
         with tarfile.open(path_zip, "r") as zip_ref:
-            zip_ref.extractall(raw_data_dir)
+            def is_within_directory(directory, target):
+                
+                abs_directory = os.path.abspath(directory)
+                abs_target = os.path.abspath(target)
+            
+                prefix = os.path.commonprefix([abs_directory, abs_target])
+                
+                return prefix == abs_directory
+            
+            def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+            
+                for member in tar.getmembers():
+                    member_path = os.path.join(path, member.name)
+                    if not is_within_directory(path, member_path):
+                        raise Exception("Attempted Path Traversal in Tar File")
+            
+                tar.extractall(path, members, numeric_owner=numeric_owner) 
+                
+            
+            safe_extract(zip_ref, raw_data_dir)
 
     gray_seg_dir = os.path.join(path_unzip_voc, GRAY_SEG_OUTPUT_DIR)
     if not os.path.exists(gray_seg_dir):
